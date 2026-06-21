@@ -440,7 +440,14 @@ async function runAudit() {
     const filename = selectedFile.name;
 
     // Transfer file bytes to Pyodide
-    pyodide.globals.set('_file_bytes', bytes);
+    // Encode file as base64 string — works reliably across all Pyodide versions
+    // btoa with chunking to handle large files safely
+    let b64 = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      b64 += btoa(String.fromCharCode(...bytes.subarray(i, i + chunkSize)));
+    }
+    pyodide.globals.set('_file_b64', b64);
     pyodide.globals.set('_file_name', filename);
     pyodide.globals.set('_audit_mode', document.getElementById('mode-select').value);
     pyodide.globals.set('_organization', document.getElementById('org-input').value || 'the Organization');
@@ -460,7 +467,8 @@ from fwrax_shadow import detect_duplicates_and_shadows
 
 logging.disable(logging.CRITICAL)  # silence in browser
 
-file_bytes = bytes(_file_bytes.to_py())
+import base64
+file_bytes = base64.b64decode(str(_file_b64))
 file_name = str(_file_name)
 audit_mode = str(_audit_mode)
 organization = str(_organization)
@@ -595,6 +603,7 @@ json.dumps({
     setTimeout(() => showLoader(false), 700);
 
   } catch (err) {
+    console.error('FWRAX audit error:', err);
     showError('Audit failed: ' + (err.message || String(err)));
     showLoader(false);
   }
@@ -730,7 +739,7 @@ tr:nth-child(even){background:#f8fafc}
 .footer{text-align:center;font-size:8pt;color:#94a3b8;padding:20px;border-top:1px solid #e2e8f0;margin-top:40px}
 </style></head><body>
 <div class="cover">
-  <div class="sub"> FWRAX — Firewall Rule Review Audit X</div>
+  <div class="sub">🔥 FWRAX — Firewall Rule Review Audit X</div>
   <h1>AUDIT REPORT</h1>
   <div class="org">${esc(org)}</div>
   <div class="meta">Generated: ${esc(now)} | Mode: ${esc(mode)} | Engine: Pyodide/WebAssembly (client-side)</div>

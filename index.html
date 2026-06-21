@@ -364,20 +364,29 @@ async function initPyodide() {
   pyodide = await loadPyodide();
 
   // Register our Python modules in sys.modules so imports work
+  // Inject Python source strings directly into Pyodide's namespace
+  pyodide.globals.set('_src_helpers', PY_HELPERS);
+  pyodide.globals.set('_src_config',  PY_CONFIG);
+  pyodide.globals.set('_src_auditor', PY_AUDITOR);
+  pyodide.globals.set('_src_shadow',  PY_SHADOW);
+
   await pyodide.runPythonAsync(`
 import sys, types
 
-def _make_module(name, code):
+def _make_module(name, src):
     mod = types.ModuleType(name)
     mod.__name__ = name
     sys.modules[name] = mod
-    exec(compile(code, name + '.py', 'exec'), mod.__dict__)
+    exec(compile(src, name + '.py', 'exec'), mod.__dict__)
     return mod
 
-_make_module('fwrax_helpers', __import__('js').PY_HELPERS)
-_make_module('fwrax_config',  __import__('js').PY_CONFIG)
-_make_module('fwrax_auditor', __import__('js').PY_AUDITOR)
-_make_module('fwrax_shadow',  __import__('js').PY_SHADOW)
+_make_module('fwrax_helpers', _src_helpers)
+_make_module('fwrax_config',  _src_config)
+_make_module('fwrax_auditor', _src_auditor)
+_make_module('fwrax_shadow',  _src_shadow)
+
+# Clean up globals
+del _src_helpers, _src_config, _src_auditor, _src_shadow
 `);
 
   pyReady = true;
@@ -721,7 +730,7 @@ tr:nth-child(even){background:#f8fafc}
 .footer{text-align:center;font-size:8pt;color:#94a3b8;padding:20px;border-top:1px solid #e2e8f0;margin-top:40px}
 </style></head><body>
 <div class="cover">
-  <div class="sub">🔥 FWRAX — Firewall Rule Review Audit X</div>
+  <div class="sub"> FWRAX — Firewall Rule Review Audit X</div>
   <h1>AUDIT REPORT</h1>
   <div class="org">${esc(org)}</div>
   <div class="meta">Generated: ${esc(now)} | Mode: ${esc(mode)} | Engine: Pyodide/WebAssembly (client-side)</div>

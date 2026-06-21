@@ -1,0 +1,52 @@
+[
+  {
+    "rule_name": "WEB-HTTPS-ALLOW",
+    "source": "10.0.10.0/24",
+    "destination": "203.0.113.50",
+    "port": 443,
+    "action": "allow"
+  },
+  {
+    "rule_name": "LEGACY-HTTP-WIDE",
+    "source": "0.0.0.0/0",
+    "destination": "198.51.100.10",
+    "port": 80,
+    "action": "allow"
+  },
+  {
+    "rule_name": "ADMIN-TELNET",
+    "source": "192.168.1.0/24",
+    "destination": "198.51.100.20",
+    "port": 23,
+    "action": "allow"
+  },
+  {
+    "rule_name": "ANY-ANY-TEST",
+    "source": "0.0.0.0/0",
+    "destination": "0.0.0.0/0",
+    "port": "any",
+    "action": "allow"
+  },
+  {
+    "rule_name": "SSH-INTERNAL",
+    "source": "10.5.0.0/16",
+    "destination": "10.5.1.10",
+    "port": 22,
+    "action": "allow"
+  },
+  {
+    "rule_name": "DENY-DEFAULT",
+    "source": "any",
+    "destination": "any",
+    "port": "any",
+    "action": "deny"
+  },
+  {
+    "rule_name": "RETIRED-WIDE-ALLOW",
+    "source": "0.0.0.0/0",
+    "destination": "0.0.0.0/0",
+    "port": 443,
+    "action": "allow",
+    "disabled": true
+  }
+]

@@ -26,6 +26,7 @@ def main() -> None:
     parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=8000, help="Bind port (default: 8000)")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload (development)")
+    parser.add_argument("--workers", type=int, default=1, help="Uvicorn workers (production: 2+)")
     parser.add_argument("--log-level", default="info", choices=("debug","info","warning","error"))
     args = parser.parse_args()
 
@@ -41,6 +42,7 @@ def main() -> None:
         host=args.host,
         port=args.port,
         reload=args.reload,
+        workers=args.workers if not args.reload else 1,
         log_level=args.log_level,
     )
 

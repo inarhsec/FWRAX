@@ -2,912 +2,598 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>FWRAX — Firewall Rule Audit</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FWRAX - Firewall Rule Audit</title>
+<meta name="description" content="Upload firewall rules (.json or .csv), run an automated audit in your browser, and download PDF/JSON/CSV reports. No server required — data never leaves your machine."/>
+<meta name="theme-color" content="#0a0e1a"/>
 <style>
-:root{
-  --bg:#0a0e1a;--surface:#0f1524;--surface2:#161d2e;--border:#1e2d45;
-  --accent:#4f9fff;--accent2:#2979d8;--danger:#f05252;--warn:#f0a500;
-  --ok:#22c55e;--med:#eab308;--low:#60a5fa;
-  --text:#e2e8f0;--muted:#64748b;--radius:10px;
-  --critical:#f05252;--high:#f59e0b;--medium:#eab308;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(79,159,255,.08),transparent)}
-
-/* ── Header ── */
-header{border-bottom:1px solid var(--border);padding:1.25rem 2.5rem;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(8px);background:rgba(10,14,26,.85);position:sticky;top:0;z-index:10}
-.logo-row{display:flex;align-items:center;gap:.85rem}
-.logo-icon{font-size:1.75rem;line-height:1}
-.logo-text{font-size:1.15rem;font-weight:700;letter-spacing:.08em;color:var(--accent);font-family:'SF Mono',monospace}
-.logo-sub{font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.15rem}
-.header-badge{font-size:.7rem;padding:.25rem .6rem;border-radius:99px;border:1px solid var(--border);color:var(--muted);letter-spacing:.08em;display:flex;align-items:center;gap:.35rem}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
-
-/* ── Main ── */
-main{max-width:1100px;margin:0 auto;padding:2.5rem 1.5rem;display:flex;flex-direction:column;gap:2rem}
-
-/* ── Cards ── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;position:relative}
-.card::before{content:'';position:absolute;inset:0;border-radius:var(--radius);background:linear-gradient(135deg,rgba(79,159,255,.025),transparent);pointer-events:none}
-.card-hd{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem;display:flex;align-items:center;gap:.6rem}
-.card-hd::before{content:'';display:block;width:3px;height:14px;background:var(--accent);border-radius:2px}
-
-/* ── Upload zone ── */
-#drop-zone{
-  border:1.5px dashed var(--border);border-radius:var(--radius);padding:3.5rem 2rem;
-  text-align:center;cursor:pointer;transition:all .25s;background:var(--surface2);
-  position:relative;overflow:hidden
-}
-#drop-zone:hover,#drop-zone.drag-over{border-color:var(--accent);background:rgba(79,159,255,.04)}
-#drop-zone::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(79,159,255,.05),transparent 70%);opacity:0;transition:.3s}
-#drop-zone:hover::after{opacity:1}
-.upload-icon{font-size:2.5rem;margin-bottom:.9rem;display:block;filter:grayscale(.3)}
-.upload-primary{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:.35rem}
-.upload-secondary{font-size:.8rem;color:var(--muted)}
-.upload-formats{display:inline-flex;gap:.4rem;margin-top:.75rem}
-.fmt-tag{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.2rem .55rem;font-size:.7rem;font-family:monospace;color:var(--accent);letter-spacing:.05em}
-#file-name-display{margin-top:.9rem;font-size:.8rem;color:var(--ok);font-weight:500;letter-spacing:.02em}
+body{background:#0a0e1a;color:#e2e8f0;font-family:system-ui,sans-serif;padding:1.5rem}
+h1{color:#4f9fff;margin-bottom:.25rem}
+.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}
+.card{background:#0f1524;border:1px solid #1e2d45;border-radius:8px;padding:1.25rem;margin-bottom:1rem}
+#status{padding:.6rem 1rem;border-radius:6px;font-size:.85rem;font-family:monospace;margin-bottom:1rem;background:#0f1524;border:1px solid #1e2d45}
+#drop-zone{border:2px dashed #1e2d45;border-radius:8px;padding:2rem;text-align:center;cursor:pointer;background:#161d2e;transition:.2s;margin-bottom:.75rem}
+#drop-zone:hover{border-color:#4f9fff}
 #file-input{display:none}
-
-/* ── Options ── */
-.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-.opt-field{}
-.opt-label{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;display:block}
-.opt-field select,.opt-field input[type=text]{
-  width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
-  padding:.6rem .9rem;border-radius:6px;font-size:.875rem;outline:none;transition:.2s
-}
-.opt-field select:focus,.opt-field input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,159,255,.1)}
-.toggles-row{grid-column:1/-1;display:flex;gap:1.25rem;flex-wrap:wrap}
-.toggle-item{display:flex;align-items:center;gap:.55rem;cursor:pointer;user-select:none}
-.toggle-item input{display:none}
-.toggle-pill{width:38px;height:20px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;position:relative;transition:.2s;flex-shrink:0}
-.toggle-pill::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--muted);border-radius:50%;transition:.2s}
-.toggle-item input:checked+.toggle-pill{background:rgba(79,159,255,.2);border-color:var(--accent)}
-.toggle-item input:checked+.toggle-pill::after{left:20px;background:var(--accent)}
-.toggle-lbl{font-size:.82rem;color:var(--text)}
-.toggle-sub{font-size:.7rem;color:var(--muted);margin-top:.1rem}
-
-/* ── Run button ── */
-#run-btn{
-  width:100%;padding:1.1rem;background:linear-gradient(135deg,var(--accent2),var(--accent));
-  color:#fff;border:none;border-radius:var(--radius);font-size:1rem;font-weight:700;
-  cursor:pointer;letter-spacing:.04em;transition:all .2s;
-  box-shadow:0 4px 20px rgba(79,159,255,.25)
-}
-#run-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 28px rgba(79,159,255,.35)}
-#run-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
-
-/* ── Loader ── */
-#loader-section{display:none}
-.loader-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin:.75rem 0}
-.loader-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0;transition:width .5s;border-radius:2px}
-.loader-msg{font-size:.8rem;color:var(--muted);font-family:monospace}
-.loader-steps{display:flex;gap:1.5rem;margin-top:.75rem}
-.step{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:.35rem;transition:.3s}
-.step.done{color:var(--ok)}
-.step.active{color:var(--accent)}
-.step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
-
-/* ── Error ── */
-#error-section{display:none}
-.error-box{background:rgba(240,82,82,.08);border:1px solid rgba(240,82,82,.3);border-radius:var(--radius);padding:1rem 1.25rem;color:var(--danger);font-size:.875rem;display:flex;gap:.75rem;align-items:flex-start}
-.error-icon{font-size:1.1rem;flex-shrink:0;margin-top:.05rem}
-
-/* ── Results ── */
-#results-section{display:none}
-
-/* Summary tiles */
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem;margin-bottom:1.75rem}
-.tile{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;position:relative;overflow:hidden}
-.tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--tile-color,var(--border))}
-.tile-val{font-size:1.8rem;font-weight:700;line-height:1;font-family:'SF Mono',monospace;color:var(--tile-color,var(--text))}
-.tile-lbl{font-size:.68rem;color:var(--muted);margin-top:.3rem;text-transform:uppercase;letter-spacing:.08em}
-.t-crit{--tile-color:var(--critical)}
-.t-high{--tile-color:var(--high)}
-.t-med{--tile-color:var(--medium)}
-.t-low{--tile-color:var(--low)}
-.t-ok{--tile-color:var(--ok)}
-.t-info{--tile-color:var(--accent)}
-.t-warn{--tile-color:var(--warn)}
-
-/* Section label */
-.section-label{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:.5rem 0 .9rem;display:flex;align-items:center;gap:.6rem}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* Downloads */
-.dl-row{display:flex;gap:.75rem;flex-wrap:wrap}
-.dl-btn{
-  display:flex;align-items:center;gap:.6rem;padding:.65rem 1.15rem;
-  border-radius:7px;border:1px solid;font-size:.82rem;font-weight:600;
-  cursor:pointer;text-decoration:none;transition:all .2s;letter-spacing:.02em
-}
-.dl-pdf{border-color:rgba(240,82,82,.4);color:var(--danger);background:rgba(240,82,82,.06)}
-.dl-pdf:hover{background:rgba(240,82,82,.12);border-color:var(--danger)}
-.dl-xlsx{border-color:rgba(34,197,94,.4);color:var(--ok);background:rgba(34,197,94,.06)}
-.dl-xlsx:hover{background:rgba(34,197,94,.12);border-color:var(--ok)}
-.dl-json{border-color:rgba(79,159,255,.4);color:var(--accent);background:rgba(79,159,255,.06)}
-.dl-json:hover{background:rgba(79,159,255,.12);border-color:var(--accent)}
-.dl-btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* Badges */
-.badge{display:inline-block;padding:.18rem .5rem;border-radius:4px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
-.bc{color:var(--critical);border-color:rgba(240,82,82,.4);background:rgba(240,82,82,.1)}
-.bh{color:var(--high);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1)}
-.bm{color:var(--medium);border-color:rgba(234,179,8,.4);background:rgba(234,179,8,.1)}
-.bl{color:var(--low);border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.1)}
-.bok{color:var(--ok);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1)}
-.bdis{color:var(--muted);border-color:var(--border);background:var(--surface2)}
-
-/* Search + filter */
-.toolbar{display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
-#search-input{flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.55rem .9rem;border-radius:6px;font-size:.85rem;outline:none;transition:.2s}
-#search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,159,255,.1)}
-.filters{display:flex;gap:.4rem;flex-wrap:wrap}
-.fb{padding:.35rem .7rem;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.05em;transition:.2s}
-.fb:hover,.fb.on{border-color:var(--accent);color:var(--accent);background:rgba(79,159,255,.06)}
-
-/* Table */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-thead th{background:var(--surface2);color:var(--muted);padding:.65rem .85rem;text-align:left;border-bottom:1px solid var(--border);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
-tbody tr{border-bottom:1px solid rgba(30,45,69,.5)}
-tbody tr:hover{background:rgba(79,159,255,.03)}
-td{padding:.65rem .85rem;vertical-align:top}
-.rname{font-family:'SF Mono',monospace;font-size:.78rem;color:var(--accent)}
-.issues-list{font-size:.75rem;color:var(--muted);list-style:none;padding:0}
-.issues-list li{padding:.15rem 0;padding-left:.85rem;position:relative}
-.issues-list li::before{content:'›';position:absolute;left:0;color:var(--border)}
-.rec-cell{font-size:.75rem;color:var(--muted);max-width:240px;line-height:1.45}
-
-/* Advisory notes */
-.note-list{display:flex;flex-direction:column;gap:.6rem}
-.note{border-left:2px solid var(--warn);padding:.6rem .9rem;background:rgba(240,165,0,.04);border-radius:0 6px 6px 0;font-size:.8rem;color:var(--text)}
-
-/* Shadow items */
-.shadow-list{display:flex;flex-direction:column;gap:.75rem}
-.shadow-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem}
-.sh-kind{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
-.sh-rules{font-family:monospace;font-size:.78rem;color:var(--accent);margin-bottom:.3rem}
-.sh-desc{font-size:.78rem;color:var(--muted)}
-
-/* Pagination */
-.pager{display:flex;gap:.4rem;align-items:center;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap}
-.pb{padding:.3rem .65rem;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:.78rem;transition:.2s}
-.pb:hover,.pb.on{border-color:var(--accent);color:var(--accent)}
-.page-info{font-size:.75rem;color:var(--muted);margin-top:.4rem;text-align:right}
-
-/* Python init warning */
-#pyodide-init{font-size:.78rem;color:var(--muted);text-align:center;padding:1rem;font-family:monospace}
-
-/* Responsive */
-@media(max-width:700px){
-  .tiles{grid-template-columns:repeat(2,1fr)}
-  .opts-grid{grid-template-columns:1fr}
-  header{padding:1rem 1.25rem}
-  main{padding:1.5rem 1rem}
-}
-@media(max-width:420px){.tiles{grid-template-columns:repeat(2,1fr)}}
+#file-status{color:#22c55e;font-size:.85rem;margin-top:.5rem;min-height:1.2rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+label{display:block;font-size:.75rem;color:#64748b;margin-bottom:.3rem;text-transform:uppercase}
+select,input[type=text]{width:100%;background:#161d2e;border:1px solid #1e2d45;color:#e2e8f0;padding:.5rem .75rem;border-radius:6px;font-size:.85rem;outline:none}
+.checks{display:flex;gap:1.5rem;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.85rem}
+#run-btn{width:100%;padding:.9rem;background:#2979d8;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:.75rem;transition:.2s}
+#run-btn:hover{background:#4f9fff}
+#run-btn:disabled{opacity:.4;cursor:not-allowed;background:#2979d8}
+#debug{background:#000;border-radius:6px;padding:.75rem;font-size:.72rem;font-family:monospace;color:#22c55e;max-height:180px;overflow-y:auto;white-space:pre-wrap;display:none;margin-top:.75rem}
+#error{background:rgba(240,82,82,.1);border:1px solid #f05252;border-radius:6px;padding:.75rem;color:#f05252;font-size:.85rem;display:none;margin-top:.75rem}
+#results{display:none;margin-top:1rem}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:.6rem;margin-bottom:1rem}
+.tile{background:#161d2e;border:1px solid #1e2d45;border-radius:6px;padding:.75rem;text-align:center}
+.tv{font-size:1.4rem;font-weight:700;font-family:monospace}
+.tl{font-size:.65rem;color:#64748b;text-transform:uppercase}
+.tc{color:#f05252}.th{color:#f59e0b}.tm{color:#eab308}.ti{color:#4f9fff}.tok{color:#22c55e}
+.dl{display:flex;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap}
+.dl a,.dl button{padding:.5rem .9rem;border-radius:5px;border:1px solid;font-size:.8rem;font-weight:600;cursor:pointer;text-decoration:none}
+.dj{border-color:#4f9fff;color:#4f9fff;background:rgba(79,159,255,.06)}
+.dc{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.06)}
+.dp{border-color:#f05252;color:#f05252;background:rgba(240,82,82,.06)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#161d2e;color:#64748b;padding:.5rem .75rem;text-align:left;border-bottom:1px solid #1e2d45;font-size:.68rem;text-transform:uppercase}
+td{padding:.5rem .75rem;border-bottom:1px solid rgba(30,45,69,.4);vertical-align:top}
+tr:hover td{background:rgba(79,159,255,.02)}
+.rn{font-family:monospace;font-size:.78rem;color:#4f9fff}
+.badge{display:inline-block;padding:.15rem .45rem;border-radius:3px;font-size:.65rem;font-weight:700;text-transform:uppercase;border:1px solid}
+.bc{color:#f05252;border-color:rgba(240,82,82,.4);background:rgba(240,82,82,.1)}
+.bh{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1)}
+.bm{color:#eab308;border-color:rgba(234,179,8,.4);background:rgba(234,179,8,.1)}
+.bl{color:#60a5fa;border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.1)}
+.bok{color:#22c55e;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1)}
+.bdis{color:#64748b;border-color:#1e2d45;background:#161d2e}
+.il{list-style:none;padding:0;font-size:.73rem;color:#64748b}
+.il li::before{content:'› '}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+<h1> FWRAX - Firewall Rule Audit X</h1>
+<div class="sub">Upload rules · Run audit · Download report · Runs entirely in your browser</div>
 
-<header>
-  <div class="logo-row">
-    <span class="logo-icon">🔥</span>
-    <div>
-      <div class="logo-text">FWRAX</div>
-      <div class="logo-sub">Firewall Rule Audit X</div>
-    </div>
-  </div>
-  <div class="header-badge">
-    <span class="status-dot" id="engine-dot" style="background:var(--warn)"></span>
-    <span id="engine-status">Loading engine…</span>
-  </div>
-</header>
+<div id="status">⏳ Loading Python engine… (~5s on first load)</div>
 
-<main>
-
-<!-- Upload -->
 <div class="card">
-  <div class="card-hd">Upload Rules File</div>
   <div id="drop-zone" onclick="document.getElementById('file-input').click()">
-    <span class="upload-icon">📂</span>
-    <div class="upload-primary">Drop your rules file here</div>
-    <div class="upload-secondary">or click to browse from your computer</div>
-    <div class="upload-formats">
-      <span class="fmt-tag">.json</span>
-      <span class="fmt-tag">.csv</span>
-    </div>
-    <div id="file-name-display"></div>
+    📂 Drop your rules file here or click to browse<br/>
+    <small style="color:#64748b">.json or .csv</small>
+    <div id="file-status"></div>
   </div>
-  <input type="file" id="file-input" accept=".json,.csv"/>
-</div>
+  <input type="file" id="file-input" accept=".json,.csv" onchange="fileSelected(this)"/>
 
-<!-- Options -->
-<div class="card">
-  <div class="card-hd">Audit Options</div>
-  <div class="opts-grid">
-    <div class="opt-field">
-      <label class="opt-label">Organization Name</label>
-      <input type="text" id="org-input" placeholder="the Organization" value="the Organization"/>
-    </div>
-    <div class="opt-field">
-      <label class="opt-label">Audit Mode</label>
-      <select id="mode-select">
-        <option value="strict">Strict — full findings, real severity</option>
-        <option value="relaxed">Relaxed — downgraded severity levels</option>
+  <div class="row">
+    <div><label>Organization</label><input type="text" id="org" value="the Organization" placeholder="the Organization"/></div>
+    <div><label>Mode</label>
+      <select id="mode">
+        <option value="strict">Strict — full findings</option>
+        <option value="relaxed">Relaxed — downgraded severity</option>
       </select>
     </div>
-    <div class="toggles-row">
-      <label class="toggle-item">
-        <input type="checkbox" id="opt-shadow" checked/>
-        <span class="toggle-pill"></span>
-        <span><div class="toggle-lbl">Shadow &amp; Duplicate Detection</div><div class="toggle-sub">Finds shadowed, duplicate, conflict rules</div></span>
-      </label>
-      <label class="toggle-item">
-        <input type="checkbox" id="opt-batch" checked/>
-        <span class="toggle-pill"></span>
-        <span><div class="toggle-lbl">Batch Heuristics</div><div class="toggle-sub">Default-deny advisory &amp; summary notes</div></span>
-      </label>
-      <label class="toggle-item">
-        <input type="checkbox" id="opt-fake"/>
-        <span class="toggle-pill"></span>
-        <span><div class="toggle-lbl">Fake Compliance Mode</div><div class="toggle-sub">Blanket downgrade for internal demos</div></span>
-      </label>
-    </div>
   </div>
+  <div class="checks">
+    <label class="chk"><input type="checkbox" id="c-shadow" checked/> Shadow & Duplicate Detection</label>
+    <label class="chk"><input type="checkbox" id="c-batch" checked/> Batch Heuristics</label>
+    <label class="chk"><input type="checkbox" id="c-fake"/> Fake Compliance</label>
+  </div>
+
+  <button id="run-btn" onclick="runAudit()" disabled>▶ Run Audit</button>
+
+  <div>
+    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.8rem;color:#64748b;margin-top:.75rem">
+      <input type="checkbox" id="show-dbg" onchange="document.getElementById('debug').style.display=this.checked?'':'none'"/>
+      Show debug log
+    </label>
+  </div>
+  <div id="debug"></div>
+  <div id="error"></div>
 </div>
 
-<!-- Run -->
-<button id="run-btn" disabled>
-  <span id="run-btn-text">Run Audit</span>
-</button>
-
-<!-- Loader -->
-<div id="loader-section" class="card">
-  <div class="card-hd">Processing</div>
-  <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
-  <div class="loader-msg" id="loader-msg">Initializing…</div>
-  <div class="loader-steps">
-    <span class="step" id="step-parse"><span class="step-dot"></span>Parse</span>
-    <span class="step" id="step-audit"><span class="step-dot"></span>Audit</span>
-    <span class="step" id="step-shadow"><span class="step-dot"></span>Shadow</span>
-    <span class="step" id="step-report"><span class="step-dot"></span>Report</span>
-  </div>
-</div>
-
-<!-- Error -->
-<div id="error-section">
-  <div class="error-box">
-    <span class="error-icon">⚠</span>
-    <span id="error-msg">An error occurred.</span>
-  </div>
-</div>
-
-<!-- Results -->
-<div id="results-section">
-
-  <!-- Summary -->
+<div id="results">
   <div class="card">
-    <div class="card-hd">Audit Summary</div>
-    <div class="tiles" id="summary-tiles"></div>
-    <div class="section-label">Downloads</div>
-    <div class="dl-row" id="dl-row"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="dl" id="dl"></div>
   </div>
-
-  <!-- Notes -->
-  <div class="card" id="notes-card" style="display:none">
-    <div class="card-hd">Advisory Notes</div>
-    <div class="note-list" id="notes-list"></div>
-  </div>
-
-  <!-- Shadow -->
-  <div class="card" id="shadow-card" style="display:none">
-    <div class="card-hd">Duplicate &amp; Shadow Findings</div>
-    <div class="shadow-list" id="shadow-list"></div>
-  </div>
-
-  <!-- Table -->
   <div class="card">
-    <div class="card-hd">Rule Findings</div>
-    <div class="toolbar">
-      <input type="text" id="search-input" placeholder="Search rule name, severity, issue…"/>
-      <div class="filters" id="filters">
-        <button class="fb on" data-f="all">All</button>
-        <button class="fb" data-f="non-compliant">Findings</button>
-        <button class="fb" data-f="Critical">Critical</button>
-        <button class="fb" data-f="High">High</button>
-        <button class="fb" data-f="Medium">Medium</button>
-        <button class="fb" data-f="compliant">Compliant</button>
-        <button class="fb" data-f="disabled">Disabled</button>
-      </div>
-    </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Rule Name</th><th>Status</th><th>Severity</th><th>Issues</th><th>Recommendation</th></tr></thead>
-        <tbody id="tbl-body"></tbody>
-      </table>
-    </div>
-    <div class="pager" id="pager"></div>
-    <div class="page-info" id="page-info"></div>
+    <table>
+      <thead><tr><th>#</th><th>Rule Name</th><th>Status</th><th>Sev</th><th>Issues</th><th>Recommendation</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
   </div>
-
 </div>
 
-</main>
-
-<!-- ═══════════════════════════ PYTHON SOURCE (embedded) ═══════════════════════ -->
 <script>
-// Python source modules embedded as JS strings — loaded into Pyodide at runtime
+// ── Embedded Python ─────────────────────────────────────────────────────
 const PY_HELPERS = "\"\"\"\nShared helpers: JSON loading, port normalization, ANY detection, logging setup.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport logging\nimport re\nimport sys\nfrom datetime import datetime, timedelta, timezone\nfrom pathlib import Path\nfrom typing import Any\n\n# Patterns treated as \"any\" for source/destination in firewall-like strings.\n_ANY_TOKENS = frozenset(\n    {\n        \"any\",\n        \"*\",\n        \"0.0.0.0/0\",\n        \"0.0.0.0\",\n        \"::/0\",\n        \"::\",\n        \"all\",\n    }\n)\n\n# Used when ``disabled_name_prefixes`` is not set in audit config (matching is case-insensitive).\n_DEFAULT_DISABLED_DISPLAY_PREFIXES: tuple[str, ...] = (\n    \"[Disabled]\",\n    \"[disabled]\",\n    \"disabled\",\n)\n\n\ndef setup_logging(level: int = logging.INFO) -> None:\n    \"\"\"Configure root logging for CLI runs.\"\"\"\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s | %(levelname)-8s | %(name)s | %(message)s\",\n        datefmt=\"%Y-%m-%d %H:%M:%S\",\n    )\n\n\ndef load_json_file(path: str | Path) -> Any:\n    \"\"\"Load and parse a JSON file with clear errors.\"\"\"\n    p = Path(path)\n    if not p.is_file():\n        raise FileNotFoundError(f\"Rules file not found: {p.resolve()}\")\n    try:\n        text = p.read_text(encoding=\"utf-8\")\n    except OSError as e:\n        raise OSError(f\"Cannot read rules file: {p}\") from e\n    try:\n        return json.loads(text)\n    except json.JSONDecodeError as e:\n        raise ValueError(f\"Invalid JSON in {p}: {e}\") from e\n\n\ndef rules_from_audit_report_raw_results(raw: list[Any]) -> list[dict[str, Any]]:\n    \"\"\"\n    Build minimal rule dicts from ``raw_rule_results`` in a prior ``--out-json`` report.\n\n    Preserves ``is_disabled`` when present so disabled rules stay classified without\n    re-supplying full firewall columns (Name/Action/Service).\n    \"\"\"\n    out: list[dict[str, Any]] = []\n    for item in raw:\n        if not isinstance(item, dict):\n            continue\n        name = str(item.get(\"rule_name\", \"\") or \"(unnamed)\")\n        row: dict[str, Any] = {\"rule_name\": name, \"Name\": name}\n        if item.get(\"is_disabled\") is True:\n            row[\"is_disabled\"] = True\n        out.append(row)\n    return out\n\n\ndef coerce_rules_input(data: Any) -> list[dict[str, Any]]:\n    \"\"\"\n    Normalize loaded JSON into a list of rule dicts for the auditor.\n\n    Accepts:\n      - A JSON array of firewall objects (e.g. Palo Alto CSV export as in finacus.json).\n      - A prior audit report object that contains ``raw_rule_results`` (e.g. newrule.json\n        from ``--out-json``).\n    \"\"\"\n    if isinstance(data, list):\n        if not all(isinstance(x, dict) for x in data):\n            raise ValueError(\"Rules file must be a JSON array of objects.\")\n        return list(data)\n\n    if isinstance(data, dict):\n        raw = data.get(\"raw_rule_results\")\n        if isinstance(raw, list) and raw:\n            probe = next((x for x in raw if isinstance(x, dict)), None)\n            if probe is not None and (\"rule_name\" in probe or \"is_disabled\" in probe):\n                if not all(isinstance(x, dict) for x in raw):\n                    raise ValueError(\"raw_rule_results must be an array of objects.\")\n                return rules_from_audit_report_raw_results(raw)\n\n    raise ValueError(\n        \"Rules file must be either (1) a JSON array of firewall rule objects with fields \"\n        \"like Name / Action (e.g. finacus.json), or (2) a prior audit report JSON from this \"\n        \"tool that includes a raw_rule_results array.\"\n    )\n\n\ndef _normalize_rule_text(value: Any) -> str:\n    \"\"\"Strip BOM/whitespace, map fullwidth brackets to ASCII, lowercase (start-only prefix checks).\"\"\"\n    s = str(value).replace(\"\\ufeff\", \"\").strip()\n    s = s.replace(\"\\uff3b\", \"[\").replace(\"\\uff3d\", \"]\")\n    return s.lower()\n\n\ndef _text_matches_disabled_prefixes(text: str, prefixes: tuple[str, ...]) -> bool:\n    \"\"\"True when the normalized string *starts with* a configured prefix (after strip).\"\"\"\n    s = _normalize_rule_text(text)\n    if not s:\n        return False\n    for p in prefixes:\n        pl = _normalize_rule_text(p)\n        if not pl:\n            continue\n        if pl == \"disabled\":\n            # Word \"disabled\" at start, or whole field is literally \"disabled\" / \"disabled.\"\n            if re.match(r\"^disabled(\\s+\\S|\\.)?$\", s) or re.match(r\"^disabled\\s+\\S\", s):\n                return True\n            if s == \"disabled\" or s.rstrip(\".\") == \"disabled\":\n                return True\n        elif s.startswith(pl):\n            return True\n    return False\n\n\ndef _segment_fields_disabled(text: Any, prefixes: tuple[str, ...]) -> bool:\n    \"\"\"\n    True if any semicolon/newline-separated segment (typical Palo Alto exports) starts with\n    a disabled prefix \u2014 e.g. ``LAN_Zone;[Disabled] MPLS_Zone`` or ``Name;[Disabled] alt``.\n    \"\"\"\n    if text is None:\n        return False\n    raw = str(text).replace(\"\\ufeff\", \"\")\n    for seg in re.split(r\"[\\n\\r;]+\", raw):\n        t = seg.strip()\n        if not t:\n            continue\n        if _text_matches_disabled_prefixes(t, prefixes):\n            return True\n    return False\n\n\ndef _iter_rule_name_candidates(rule: dict[str, Any]):\n    \"\"\"Yield non-blank display names from common export keys (order matters).\"\"\"\n    for key in (\"rule_name\", \"Name\", \"name\", \"Rule Name\", \"ruleName\"):\n        v = rule.get(key)\n        if v is None:\n            continue\n        t = str(v).strip()\n        if t:\n            yield t\n\n\ndef _iter_tags_candidates(rule: dict[str, Any]):\n    for key in (\"Tags\", \"Tag\", \"tags\", \"tag\"):\n        v = rule.get(key)\n        if v is None:\n            continue\n        t = str(v).strip()\n        if t:\n            yield t\n\n\ndef _display_name_indicates_disabled(\n    rule: dict[str, Any],\n    name_prefixes: tuple[str, ...] | None = None,\n    *,\n    scan_segments: bool = True,\n) -> bool:\n    \"\"\"\n    True when any name/tag/action field indicates a disabled rule.\n\n    Supports Palo Alto-style ``[Disabled]`` at the start of the cell or at the start of any\n    ``;``-separated segment (multi-value zones/names).\n    \"\"\"\n    prefixes = name_prefixes if name_prefixes else _DEFAULT_DISABLED_DISPLAY_PREFIXES\n\n    def check_field(val: Any) -> bool:\n        if val is None:\n            return False\n        s = str(val).strip()\n        if not s:\n            return False\n        if _text_matches_disabled_prefixes(s, prefixes):\n            return True\n        if scan_segments and _segment_fields_disabled(s, prefixes):\n            return True\n        return False\n\n    for raw in _iter_rule_name_candidates(rule):\n        if check_field(raw):\n            return True\n\n    for raw in _iter_tags_candidates(rule):\n        if check_field(raw):\n            return True\n\n    for key in (\"Type\", \"type\"):\n        val = rule.get(key)\n        if val is not None and check_field(str(val)):\n            return True\n\n    for key in (\"action\", \"Action\"):\n        val = rule.get(key)\n        if val is not None and check_field(str(val)):\n            return True\n\n    return False\n\n\ndef _rule_display_name_matches_literals(\n    rule: dict[str, Any],\n    literals: tuple[str, ...] | None,\n) -> bool:\n    \"\"\"True if any non-empty rule_name / Name / \u2026 candidate equals a configured string (case-insensitive).\"\"\"\n    if not literals:\n        return False\n    lowered = {str(x).strip().lower() for x in literals if str(x).strip()}\n    if not lowered:\n        return False\n    for raw in _iter_rule_name_candidates(rule):\n        nm = str(raw).strip().lower()\n        if nm and nm in lowered:\n            return True\n    return False\n\n\ndef rule_is_disabled(\n    rule: dict[str, Any],\n    *,\n    disabled_name_prefixes: tuple[str, ...] | None = None,\n    disabled_rule_name_literals: tuple[str, ...] | None = None,\n    disabled_scan_segments: bool = True,\n    disabled_scan_all_string_fields: bool = True,\n) -> bool:\n    \"\"\"\n    True if the rule object indicates it is not active on the appliance.\n\n    Supports: explicit ``is_disabled: true`` (e.g. rows rebuilt from ``raw_rule_results``),\n    disabled/enabled/active/status fields, display names matching ``disabled_name_prefixes``\n    (e.g. leading ``[Disabled]``), and optional exact full-name matches via\n    ``disabled_rule_name_literals``.\n    \"\"\"\n    if rule.get(\"is_disabled\") is True:\n        return True\n\n    if disabled_scan_all_string_fields and rule_row_any_string_suggests_disabled(\n        rule,\n        disabled_name_prefixes=disabled_name_prefixes,\n        scan_segments=disabled_scan_segments,\n    ):\n        return True\n\n    if _display_name_indicates_disabled(\n        rule,\n        name_prefixes=disabled_name_prefixes,\n        scan_segments=disabled_scan_segments,\n    ):\n        return True\n\n    if _rule_display_name_matches_literals(rule, disabled_rule_name_literals):\n        return True\n\n    if rule.get(\"disabled\") is True:\n        return True\n    ds = str(rule.get(\"disabled\", \"\")).strip().lower()\n    if ds in (\"true\", \"1\", \"yes\"):\n        return True\n\n    if rule.get(\"enabled\") is False:\n        return True\n    es = str(rule.get(\"enabled\", \"\")).strip().lower()\n    if es in (\"false\", \"0\", \"no\"):\n        return True\n\n    if rule.get(\"active\") is False:\n        return True\n    act = str(rule.get(\"active\", \"\")).strip().lower()\n    if act in (\"false\", \"0\", \"no\"):\n        return True\n\n    # FortiOS uses \"disable\" (no trailing d); also accept \"disabled\", \"inactive\", \"off\".\n    status = str(rule.get(\"status\", \"\")).strip().lower()\n    return status in (\"disable\", \"disabled\", \"inactive\", \"off\")\n\n\ndef is_any_address(value: str | None) -> bool:\n    \"\"\"True if value represents an unconstrained source or destination.\"\"\"\n    if value is None:\n        return False\n    s = str(value).strip().lower()\n    if not s:\n        return False\n    if s in _ANY_TOKENS:\n        return True\n    # IPv4 \"any\" style\n    if re.fullmatch(r\"0\\.0\\.0\\.0(/\\d+)?\", s):\n        return True\n    return False\n\n\ndef multi_value_field_has_any(value: str | None) -> bool:\n    \"\"\"\n    True if the whole value or any ``;``/newline-separated segment is an unconstrained token\n    (``any``, ``*``, etc.) \u2014 typical of Palo Alto multi-value cells.\n    \"\"\"\n    if value is None:\n        return False\n    raw = str(value).strip()\n    if not raw:\n        return False\n    if is_any_address(raw):\n        return True\n    for seg in re.split(r\"[\\n\\r;]+\", raw):\n        t = seg.strip()\n        if t and is_any_address(t):\n            return True\n    return False\n\n\ndef get_source_zone_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Source Zone\", \"source_zone\", \"SourceZone\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef get_destination_zone_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Destination Zone\", \"destination_zone\", \"DestinationZone\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef get_source_user_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Source User\", \"source_user\", \"SourceUser\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef get_application_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Application\", \"application\", \"Applications\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef build_finacus_audit_view(rule: dict[str, Any]) -> dict[str, Any]:\n    \"\"\"\n    Collect all common export columns (finacus.json / Palo Alto style) into one structure.\n    ``full_record`` is a shallow copy of the entire rule row so no JSON field is dropped.\n    \"\"\"\n    fr = dict(rule)\n\n    def pick(*keys: str) -> str:\n        for k in keys:\n            v = rule.get(k)\n            if v is not None and str(v).strip() != \"\":\n                return str(v).strip()\n        return \"\"\n\n    name = pick(\"rule_name\", \"Name\", \"name\", \"Rule Name\", \"ruleName\")\n    return {\n        \"full_record\": fr,\n        \"name\": name or \"(unnamed)\",\n        \"source_address\": pick(\"Source Address\", \"source\", \"source_address\", \"src\"),\n        \"destination_address\": pick(\"Destination Address\", \"destination\", \"destination_address\", \"dst\"),\n        \"source_zone\": pick(\"Source Zone\", \"source_zone\"),\n        \"destination_zone\": pick(\"Destination Zone\", \"destination_zone\"),\n        \"source_user\": pick(\"Source User\", \"source_user\"),\n        \"source_device\": pick(\"Source Device\", \"source_device\"),\n        \"destination_device\": pick(\"Destination Device\", \"destination_device\"),\n        \"application\": pick(\"Application\", \"application\"),\n        \"service_raw\": rule.get(\"Service\") if rule.get(\"Service\") is not None else rule.get(\"Services\") or rule.get(\"service\"),\n        \"profile\": pick(\"Profile\", \"profile\"),\n        \"options\": pick(\"Options\", \"options\"),\n        \"tags\": pick(\"Tags\", \"tags\"),\n        \"type\": pick(\"Type\", \"type\"),\n        \"action_raw\": pick(\"Action\", \"action\"),\n        \"field_index\": rule.get(\"FIELD1\"),\n        \"rule_usage_hit_count\": rule.get(\"Rule Usage Hit Count\"),\n        \"rule_usage_last_hit\": rule.get(\"Rule Usage Last Hit\"),\n        \"rule_usage_first_hit\": rule.get(\"Rule Usage First Hit\"),\n        \"rule_usage_apps_seen\": rule.get(\"Rule Usage Apps Seen\"),\n        \"days_with_no_new_apps\": rule.get(\"Days With No New Apps\"),\n        \"modified\": rule.get(\"Modified\"),\n        \"created\": rule.get(\"Created\"),\n    }\n\n\ndef source_side_unrestricted(\n    rule: dict[str, Any],\n    *,\n    include_zones: bool,\n    include_user: bool,\n) -> bool:\n    \"\"\"\n    Any-wildcard on source dimension using address + optional zone + optional user columns.\n\n    Design rule (Palo Alto / finacus.json parity):\n      - Source Address is the primary gate. If it is a specific IP/subnet (not any/wildcard),\n        the rule is NOT unrestricted on the source side \u2014 even if Source User or Source Zone\n        happens to be ``any``.  ``Source User = any`` is the platform default meaning\n        \"no user-identity filter applied\"; it does not mean all source addresses are permitted.\n      - Zone and User escalate to \"unrestricted\" ONLY when the source address is already\n        unconstrained (i.e. any / 0.0.0.0/0).  A specific address with Source Zone = any\n        is still pinned to that address and is not flagged here.\n    \"\"\"\n    src_addr = get_rule_source_for_audit(rule)\n    src_addr_any = multi_value_field_has_any(src_addr)\n\n    # If address is specific, the source is constrained regardless of zone/user.\n    if not src_addr_any and src_addr.strip():\n        return False\n\n    # Address is wildcard (or absent) \u2014 now check zone and user as escalation signals.\n    if src_addr_any:\n        return True\n\n    # Address field is blank/absent: fall back to zone then user.\n    if include_zones and multi_value_field_has_any(get_source_zone_for_audit(rule)):\n        return True\n    if include_user and multi_value_field_has_any(get_source_user_for_audit(rule)):\n        return True\n    return False\n\n\ndef destination_side_unrestricted(\n    rule: dict[str, Any],\n    *,\n    include_zones: bool,\n    include_application: bool,\n) -> bool:\n    \"\"\"\n    Any-wildcard on destination dimension using address + optional zone + optional application.\n\n    Design rule (Palo Alto / finacus.json parity):\n      - Destination Address is the primary gate. If it is a specific IP/subnet (not any/wildcard),\n        the rule is NOT unrestricted on the destination side \u2014 even if Application or\n        Destination Zone happens to be ``any``.\n      - Application = ``any`` is treated as unconstrained ONLY when BOTH:\n          (a) Destination Address is also unconstrained (any / 0.0.0.0/0), AND\n          (b) Service is not concretely defined (i.e. Service is absent, blank, or ``any``).\n        When Service carries a real port/service name (e.g. ``service-https``, ``TCP_443``),\n        the service constraint already limits the traffic, so Application=\"any\" is an\n        *observation* rather than an *unrestricted destination* signal.\n      - Service=any BUT Application IS defined (not any):\n          App-ID enforcement on Palo Alto means the named app constrains the traffic even\n          when Service is unconstrained.  This combination is NOT treated as an overly-\n          permissive destination; a separate observation is emitted by\n          ``application_any_observation`` (Case C in that function).\n      - Destination Zone = any escalates to unrestricted only when Destination Address is\n        already unconstrained.\n    \"\"\"\n    dst_addr = get_rule_destination_for_audit(rule)\n    dst_addr_any = multi_value_field_has_any(dst_addr)\n\n    # Specific destination address \u2192 constrained regardless of zone/application.\n    if not dst_addr_any and dst_addr.strip():\n        return False\n\n    # -----------------------------------------------------------------------\n    # Helper: resolve the effective application posture for the caller context.\n    #   include_application=False is passed through unchanged.\n    #   When True, we may reduce it to False based on Service/App values.\n    # -----------------------------------------------------------------------\n    def _resolve_include_application(inc_app: bool) -> bool:\n        if not inc_app:\n            return False\n        svc = rule.get(\"Service\") or rule.get(\"Services\") or rule.get(\"service\")\n        svc_ports = parse_service_field(svc)\n        svc_is_any_or_absent = (not svc_ports) or (svc_ports == [\"any\"])\n        app_raw = get_application_for_audit(rule)\n        app_is_any = multi_value_field_has_any(app_raw) if app_raw.strip() else True\n\n        if not svc_is_any_or_absent:\n            # Service carries real ports \u2192 Application=\"any\" is the PA default; not a gap.\n            return False\n        if not app_is_any and app_raw.strip():\n            # Service=any but Application IS defined (not any).\n            # App-ID constrains the traffic \u2192 NOT an unrestricted-destination signal.\n            # application_any_observation emits a Case-C observation separately.\n            return False\n        # Both Service and Application are unconstrained \u2192 fully unrestricted.\n        return True\n\n    # Destination address is a wildcard.\n    if dst_addr_any:\n        effective_inc_app = _resolve_include_application(include_application)\n        if include_zones and multi_value_field_has_any(get_destination_zone_for_audit(rule)):\n            return True\n        if effective_inc_app and multi_value_field_has_any(get_application_for_audit(rule)):\n            return True\n        # If Application IS defined (not any) and Service is any: App-ID constrains traffic.\n        # Do NOT treat this as unrestricted even though the address is any.\n        if include_application:\n            svc2 = rule.get(\"Service\") or rule.get(\"Services\") or rule.get(\"service\")\n            svc_ports2 = parse_service_field(svc2)\n            svc_any2 = (not svc_ports2) or (svc_ports2 == [\"any\"])\n            app_raw2 = get_application_for_audit(rule)\n            if svc_any2 and app_raw2.strip() and not multi_value_field_has_any(app_raw2):\n                # Service=any + App=defined \u2192 App-ID governs; not unrestricted destination.\n                return False\n        return True  # address itself is any \u2014 destination is unrestricted\n\n    # Address is blank/absent: fall back to zone then application.\n    if include_zones and multi_value_field_has_any(get_destination_zone_for_audit(rule)):\n        return True\n    effective_inc_app = _resolve_include_application(include_application)\n    if effective_inc_app and multi_value_field_has_any(get_application_for_audit(rule)):\n        return True\n    return False\n\n\ndef _check_value_for_disabled(\n    val: Any,\n    *,\n    prefixes: tuple[str, ...],\n    scan_segments: bool,\n) -> bool:\n    if isinstance(val, str):\n        s = val.strip()\n        if not s:\n            return False\n        if _text_matches_disabled_prefixes(s, prefixes):\n            return True\n        if scan_segments and _segment_fields_disabled(s, prefixes):\n            return True\n        return False\n    if isinstance(val, list):\n        for item in val:\n            if _check_value_for_disabled(item, prefixes=prefixes, scan_segments=scan_segments):\n                return True\n    return False\n\n\ndef rule_row_any_string_suggests_disabled(\n    rule: dict[str, Any],\n    *,\n    disabled_name_prefixes: tuple[str, ...] | None = None,\n    scan_segments: bool = True,\n) -> bool:\n    \"\"\"\n    Scan every value in the rule object (all export columns) for disabled markers.\n    Use for finacus.json rows where [Disabled] appears on Service, zones, etc.\n    \"\"\"\n    prefixes = disabled_name_prefixes if disabled_name_prefixes else _DEFAULT_DISABLED_DISPLAY_PREFIXES\n    for _key, val in rule.items():\n        if _check_value_for_disabled(val, prefixes=prefixes, scan_segments=scan_segments):\n            return True\n    return False\n\n\ndef parse_ports(port_field: str | int | list[Any] | None) -> list[int | str]:\n    \"\"\"\n    Normalize port field to a list of ints or the string 'any' for wildcard.\n    Supports: 80, \"80\", \"80,443\", [\"80\",\"443\"], \"any\".\n    \"\"\"\n    if port_field is None:\n        return []\n    if isinstance(port_field, list):\n        out: list[int | str] = []\n        for item in port_field:\n            out.extend(parse_ports(item))\n        return out\n    if isinstance(port_field, int):\n        return [port_field]\n    s = str(port_field).strip().lower()\n    if s in _ANY_TOKENS or s == \"0-65535\":\n        return [\"any\"]\n    parts = re.split(r\"[,;\\s]+\", s)\n    result: list[int | str] = []\n    for p in parts:\n        if not p:\n            continue\n        pl = p.strip().lower()\n        if pl in _ANY_TOKENS:\n            result.append(\"any\")\n            continue\n        if \"-\" in pl:\n            # Range: take low end for audit heuristics\n            low, _, _ = pl.partition(\"-\")\n            try:\n                result.append(int(low))\n            except ValueError:\n                result.append(pl)\n            continue\n        try:\n            result.append(int(pl))\n        except ValueError:\n            result.append(pl)\n    return result\n\n\n_SERVICE_TOKEN_PORTS: dict[str, list[int]] = {\n    \"service-http\": [80],\n    \"service-https\": [443],\n    \"http\": [80],\n    \"https\": [443],\n    \"ssh\": [22],\n    \"dns\": [53],\n    \"smtp\": [25],\n    \"telnet\": [23],\n    \"ftp\": [21],\n}\n\n_RE_TCP_UDP_PORT = re.compile(r\"^(?:tcp|udp)[_\\s/-]+(\\d{1,5})$\", re.IGNORECASE)\n\n\ndef parse_service_field(val: Any) -> list[int | str]:\n    \"\"\"\n    Derive port list from ``Service`` / ``Services`` columns (e.g. ``service-https``, ``TCP_445``).\n    ``any`` / ``application-default`` \u2192 logical ``any``.\n    \"\"\"\n    if val is None:\n        return []\n    if isinstance(val, list):\n        acc: list[int | str] = []\n        for item in val:\n            acc.extend(parse_service_field(item))\n        return acc if acc else []\n    s = str(val).strip()\n    if not s:\n        return []\n    low = s.lower()\n    if low in _ANY_TOKENS or \"application-default\" in low:\n        return [\"any\"]\n    found: set[int] = set()\n    for part in re.split(r\"[;,\\n\\r]+\", s):\n        tok = part.strip()\n        if not tok:\n            continue\n        tl = tok.lower()\n        if tl in _ANY_TOKENS:\n            return [\"any\"]\n        if tl in _SERVICE_TOKEN_PORTS:\n            for p in _SERVICE_TOKEN_PORTS[tl]:\n                found.add(p)\n            continue\n        m = _RE_TCP_UDP_PORT.match(tok.strip())\n        if m:\n            p = int(m.group(1))\n            if 1 <= p <= 65535:\n                found.add(p)\n                continue\n        m2 = re.match(r\"^(?:TCP|UDP)_(\\d{1,5})$\", tok.strip(), re.IGNORECASE)\n        if m2:\n            p = int(m2.group(1))\n            if 1 <= p <= 65535:\n                found.add(p)\n                continue\n        for n in re.findall(r\"\\b(\\d{1,5})\\b\", tok):\n            p = int(n)\n            if 1 <= p <= 65535:\n                found.add(p)\n    if not found:\n        return [s]\n    return sorted(found)\n\n\ndef rule_ports_for_audit(rule: dict[str, Any]) -> list[int | str]:\n    \"\"\"Prefer explicit ``port``; otherwise parse ``Service`` / ``Services``.\"\"\"\n    if rule.get(\"port\") is not None and str(rule.get(\"port\")).strip() != \"\":\n        return parse_ports(rule.get(\"port\"))\n    svc = rule.get(\"Service\") or rule.get(\"Services\") or rule.get(\"service\")\n    return parse_service_field(svc)\n\n\n# Palo Alto application names \u2192 typical port(s) for policy alignment with Service-derived ports.\n_APPLICATION_TO_PORTS: dict[str, list[int]] = {\n    **_SERVICE_TOKEN_PORTS,\n    \"web-browsing\": [80, 443],\n    \"web browsing\": [80, 443],\n    \"ssl\": [443],\n    \"ssl-tls\": [443],\n    \"ms-rdp\": [3389],\n    \"rdp\": [3389],\n    \"ms-sql\": [1433],\n    \"mssql\": [1433],\n    \"oracle\": [1521],\n    \"mysql\": [3306],\n    \"postgresql\": [5432],\n    \"mongodb\": [27017],\n    \"snmp\": [161],\n    \"ntp\": [123],\n    \"icmp\": [],\n    \"ping\": [],\n    \"traceroute\": [],\n}\n\n\ndef parse_application_field(val: Any) -> list[int | str]:\n    \"\"\"\n    Map ``Application`` cell values to port numbers where possible (complements ``Service``).\n    ``any`` / ``application-default`` \u2192 ``any``.\n    \"\"\"\n    if val is None:\n        return []\n    if isinstance(val, list):\n        acc: list[int | str] = []\n        for item in val:\n            acc.extend(parse_application_field(item))\n        return acc if acc else []\n    s = str(val).strip()\n    if not s:\n        return []\n    low = s.lower()\n    if low in _ANY_TOKENS or \"application-default\" in low:\n        return [\"any\"]\n    found: set[int] = set()\n    for part in re.split(r\"[;,\\n\\r]+\", s):\n        tok = part.strip()\n        if not tok:\n            continue\n        tl = tok.lower()\n        if tl in _ANY_TOKENS:\n            return [\"any\"]\n        if tl in _APPLICATION_TO_PORTS:\n            for p in _APPLICATION_TO_PORTS[tl]:\n                if p:\n                    found.add(p)\n            continue\n        m = _RE_TCP_UDP_PORT.match(tok.strip())\n        if m:\n            p = int(m.group(1))\n            if 1 <= p <= 65535:\n                found.add(p)\n    if not found:\n        return []\n    return sorted(found)\n\n\ndef ports_from_application_field(rule: dict[str, Any]) -> list[int | str]:\n    val = rule.get(\"Application\") or rule.get(\"application\") or rule.get(\"Applications\")\n    return parse_application_field(val)\n\n\ndef merge_port_lists(*lists: list[list[int | str]]) -> list[int | str]:\n    \"\"\"Union numeric ports; if any list contains ``any``, result is ``any``.\"\"\"\n    for L in lists:\n        if not L:\n            continue\n        if any(x == \"any\" for x in L):\n            return [\"any\"]\n    nums: set[int] = set()\n    for L in lists:\n        for x in L:\n            if x == \"any\":\n                return [\"any\"]\n            if isinstance(x, int):\n                nums.add(x)\n            else:\n                try:\n                    nums.add(int(str(x).strip()))\n                except ValueError:\n                    pass\n    return sorted(nums)\n\n\ndef rule_effective_ports_for_policy(rule: dict[str, Any], *, include_application: bool = True) -> list[int | str]:\n    \"\"\"\n    Combine Service-derived and Application-derived ports for blocked/allowed policy checks.\n\n    Palo Alto semantics:\n      - Service is the port-level gate. When Service has concrete ports (e.g. ``service-https``\n        \u2192 443), those are the effective ports regardless of Application.\n      - Application = ``any`` means \"match any L7 app on those ports\" \u2014 it does NOT widen\n        the port scope to \"any port\" when Service already pins specific ports.\n      - Only when Service is absent/any AND Application is ``any`` do we treat the combined\n        result as ``any`` (no port restriction at all).\n    \"\"\"\n    svc_ports = rule_ports_for_audit(rule)\n    if not include_application:\n        return svc_ports\n\n    app_ports = ports_from_application_field(rule)\n    if not app_ports:\n        return svc_ports\n\n    # If Service provides real (non-any) ports, Application=\"any\" must NOT escalate to \"any\".\n    svc_has_real_ports = svc_ports and svc_ports != [\"any\"]\n    app_is_any = app_ports == [\"any\"]\n\n    if svc_has_real_ports and app_is_any:\n        # Service constrains the ports; Application=\"any\" is the PA default for service-based rules.\n        return svc_ports\n\n    if not svc_ports:\n        # No service definition \u2014 application field is the only port signal.\n        return app_ports\n\n    return merge_port_lists(svc_ports, app_ports)\n\n\ndef parse_rule_usage_last_hit_to_utc(raw: Any) -> datetime | None:\n    \"\"\"\n    Parse ``Rule Usage Last Hit`` style timestamps (e.g. ``02-04-2026 19:38``) to UTC.\n    Tries common export formats.\n    \"\"\"\n    if raw is None:\n        return None\n    s = str(raw).strip()\n    if not s or s.lower() in (\"none\", \"n/a\", \"-\"):\n        return None\n    formats = (\n        \"%d-%m-%Y %H:%M\",\n        \"%d-%m-%Y %H:%M:%S\",\n        \"%m-%d-%Y %H:%M\",\n        \"%m-%d-%Y %H:%M:%S\",\n        \"%Y-%m-%d %H:%M:%S\",\n        \"%Y-%m-%d %H:%M\",\n        \"%d/%m/%Y %H:%M\",\n        \"%m/%d/%Y %H:%M\",\n    )\n    for fmt in formats:\n        try:\n            dt = datetime.strptime(s, fmt)\n            return dt.replace(tzinfo=timezone.utc)\n        except ValueError:\n            continue\n    return None\n\n\ndef _rule_usage_hit_count_is_zero(rule: dict[str, Any]) -> bool:\n    \"\"\"\n    Return True when the rule's hit-count field is present and equals zero.\n\n    Recognises:\n      - ``Rule Usage Hit Count``   (Palo Alto export \u2014 the \"Usage 0\" column)\n      - ``rule_usage_hit_count``   (snake-case variant)\n      - ``hitcount`` / ``hit_count`` (FortiOS REST API / FortiManager)\n      - ``bytes`` / ``pkts``        (FortiOS REST API byte/packet counters)\n\n    A value of 0 (int) or \"0\" (string) means the rule has NEVER matched traffic.\n    Absent / None means the platform did not export usage data \u2014 we do NOT flag it.\n    \"\"\"\n    for key in (\n        \"Rule Usage Hit Count\",\n        \"rule_usage_hit_count\",\n        \"hitcount\",\n        \"hit_count\",\n        \"bytes\",\n        \"pkts\",\n    ):\n        raw = rule.get(key)\n        if raw is None:\n            continue\n        try:\n            return int(str(raw).strip()) == 0\n        except (ValueError, TypeError):\n            pass\n    return False\n\n\ndef stale_rule_observation_message(\n    rule: dict[str, Any],\n    *,\n    months_threshold: float,\n    now: datetime | None = None,\n) -> str | None:\n    \"\"\"\n    Return an observation string when a rule appears to be unused / stale.\n\n    Two independent checks (either can trigger):\n\n    1. **Hit-count = 0** \u2014 the rule has never matched any traffic since the counter\n       was last reset.  Applies to both Palo Alto (``Rule Usage Hit Count = 0``) and\n       FortiGate (``hitcount = 0`` / ``bytes = 0`` from the REST API).  This is the\n       FortiGate equivalent of the Palo Alto \"Usage 0\" finding that was previously\n       undetected for FortiGate rulesets.\n\n    2. **Last-hit timestamp** older than ``months_threshold`` months \u2014 the rule matched\n       traffic in the past but has not been exercised recently.\n\n    Recognises Palo Alto and FortiGate key variants:\n      - ``Rule Usage Last Hit`` (Palo Alto export / canonical key)\n      - ``rule_usage_last_hit`` (snake-case variant)\n      - ``last-used`` / ``last_used`` / ``last-hit`` / ``last_hit`` (FortiOS REST API)\n      - ``last_active`` (FortiManager)\n    \"\"\"\n    if months_threshold <= 0:\n        return None\n    now = now or datetime.now(timezone.utc)\n\n    # --- Check 1: hit-count = 0 (never matched traffic) ---\n    if _rule_usage_hit_count_is_zero(rule):\n        return (\n            \"Observation: Rule Usage Hit Count is 0 \u2014 this rule has never matched any traffic \"\n            \"since the counter was last reset (equivalent to 'Usage 0' on Palo Alto). \"\n            \"Confirm whether the rule serves an active business purpose or should be decommissioned.\"\n        )\n\n    # --- Check 2: last-hit timestamp older than threshold ---\n    raw = (\n        rule.get(\"Rule Usage Last Hit\")\n        or rule.get(\"rule_usage_last_hit\")\n        or rule.get(\"last-used\")\n        or rule.get(\"last_used\")\n        or rule.get(\"last-hit\")\n        or rule.get(\"last_hit\")\n        or rule.get(\"last_active\")\n    )\n    dt = parse_rule_usage_last_hit_to_utc(raw)\n    if dt is None:\n        return None\n    if dt > now:\n        return None\n    # Calendar-like window: months_threshold * average days per month\n    cutoff = now - timedelta(days=round(months_threshold * 30.437))\n    if dt >= cutoff:\n        return None\n    age_days = (now - dt).days\n    return (\n        f\"Observation: Rule Usage Last Hit ({raw}) is older than {months_threshold:g} month(s) \"\n        f\"relative to the review time (approximately {age_days} days since last match); \"\n        \"confirm whether the rule is still required or may be decommissioned.\"\n    )\n\n\ndef logtraffic_disabled_observation(rule: dict[str, Any]) -> str | None:\n    \"\"\"\n    Return an observation string when FortiGate ``logtraffic`` is explicitly disabled on an\n    allow rule.  Silent logging gaps undermine SIEM visibility and incident response.\n\n    Reads:\n      - ``fortigate_logtraffic_off`` (bool set by fortigate_normalize)\n      - ``fortigate_logtraffic`` raw value (fallback)\n      - ``Log Traffic`` human-readable label\n    Returns ``None`` when logging is enabled or field is absent (non-FortiGate rules).\n    \"\"\"\n    # Primary: normalizer-set boolean flag\n    if rule.get(\"fortigate_logtraffic_off\") is True:\n        label = rule.get(\"Log Traffic\") or \"Disabled\"\n        return (\n            f\"Observation: FortiGate logtraffic is set to '{label}' \u2014 traffic permitted by this \"\n            \"allow rule will not be logged to the FortiAnalyzer/SIEM. This creates a visibility gap \"\n            \"for security monitoring and incident investigation. Enable logtraffic=all or logtraffic=utm.\"\n        )\n    # Fallback: check raw logtraffic value directly (e.g. when normalize was not used)\n    raw_lt = str(rule.get(\"fortigate_logtraffic\") or rule.get(\"logtraffic\") or \"\").strip().lower()\n    if raw_lt == \"disable\":\n        return (\n            \"Observation: FortiGate logtraffic is explicitly disabled \u2014 traffic permitted by this \"\n            \"allow rule will not be logged. Enable logtraffic=all or logtraffic=utm.\"\n        )\n    return None\n\n\ndef application_any_observation(rule: dict[str, Any]) -> str | None:\n    \"\"\"\n    Observation for Application-vs-Service alignment on allow rules (call after action check).\n\n    Three distinct cases are handled:\n\n    Case A \u2014 Application=any AND Service=any/absent:\n        Both dimensions are unconstrained.  This is the broad case flagged as an issue\n        (review for least-privilege).\n\n    Case B \u2014 Application=any AND Service=defined (concrete ports):\n        Service already gates the traffic at the port level; Application=\"any\" is the\n        normal Palo Alto default for service-based rules and is NOT a misconfiguration.\n        Suppressed entirely \u2014 no observation emitted.\n\n    Case C \u2014 Service=any/absent AND Application=defined (not any):    \u2190 NEW\n        Service is unconstrained but the Application field restricts the traffic to a\n        specific L7 app (e.g. 'ssl', 'web-browsing').  On Palo Alto this is correct\n        behaviour; the App-ID constrains the traffic even when Service=any.\n        Emit an *observation-only* message: 'Service is any but Application restricts\n        to X; verify least-privilege'.  This is NOT treated as a hard non-compliance \u2014\n        the rule is NOT marked overly-permissive by this function.\n    \"\"\"\n    app_raw = get_application_for_audit(rule)\n    if not app_raw.strip():\n        return None  # No Application field at all \u2014 nothing to observe.\n\n    svc = rule.get(\"Service\") or rule.get(\"Services\") or rule.get(\"service\")\n    svc_ports = parse_service_field(svc)\n    svc_is_any_or_absent = (not svc_ports) or (svc_ports == [\"any\"])\n\n    app_is_any = multi_value_field_has_any(app_raw)\n\n    if app_is_any:\n        if not svc_is_any_or_absent:\n            # Case B: Service pins the ports \u2014 Application=\"any\" is not a meaningful gap.\n            return None\n        # Case A: both Application and Service are unconstrained.\n        return (\n            \"Observation: Application is set to 'any' and Service is also unconstrained, \"\n            \"permitting all applications on all ports \u2014 review for least-privilege alignment.\"\n        )\n\n    # Application IS defined (not any).\n    if svc_is_any_or_absent:\n        # Case C: Service=any but Application restricts to specific L7 app(s).\n        # On Palo Alto, App-ID enforcement makes this correct behaviour, but it is\n        # worth noting so auditors can confirm App-ID profiles are active.\n        app_display = app_raw.strip()\n        return (\n            f\"Observation: Service is 'any' but Application is defined as '{app_display}'; \"\n            \"App-ID enforcement restricts traffic to the specified application(s). \"\n            \"Verify that App-ID security profiles are active and that 'any' Service is \"\n            \"intentional \u2014 least-privilege would prefer an explicit Service object.\"\n        )\n\n    # Application defined AND Service defined \u2014 both constrain the traffic. No observation.\n    return None\n\n\n_RE_LEADING_DISABLED = re.compile(r\"^\\s*\\[disabled\\]\\s*\", re.IGNORECASE)\n\n\ndef get_raw_action(rule: dict[str, Any]) -> str:\n    for k in (\"action\", \"Action\", \"ACTION\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef effective_action_verb(rule: dict[str, Any]) -> str:\n    \"\"\"Verb after stripping a leading ``[Disabled]`` marker (Palo Alto).\"\"\"\n    raw = get_raw_action(rule)\n    return _RE_LEADING_DISABLED.sub(\"\", raw).strip().lower()\n\n\ndef rule_action_is_allow(rule: dict[str, Any]) -> bool:\n    v = effective_action_verb(rule)\n    return v in (\"allow\", \"permit\", \"accept\")\n\n\ndef get_rule_source_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Source Address\", \"source\", \"Source\", \"source_address\", \"src\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef get_rule_destination_for_audit(rule: dict[str, Any]) -> str:\n    for k in (\"Destination Address\", \"destination\", \"Destination\", \"destination_address\", \"dst\"):\n        v = rule.get(k)\n        if v is not None and str(v).strip() != \"\":\n            return str(v).strip()\n    return \"\"\n\n\ndef max_severity(\n    current: str,\n    candidate: str,\n    order: tuple[str, ...] = (\"Low\", \"Medium\", \"High\", \"Critical\"),\n) -> str:\n    \"\"\"Return the higher of two severity labels.\"\"\"\n    try:\n        return current if order.index(current) >= order.index(candidate) else candidate\n    except ValueError:\n        return candidate\n\n\ndef resolve_audit_engine_mode(\n    cli_mode: str | None,\n    config_mode: str,\n) -> tuple[str, list[str]]:\n    \"\"\"\n    Resolve strict/relaxed for the real audit engine only.\n\n    The engine never runs in blanket ``fake`` mode from CLI/config; fake compliance is applied\n    after the audit via ``fake_compliance.apply_fake_compliance`` (or legacy blanket with\n    ``--mode fake --no-prompt``).\n\n    Returns (audit_mode, log_messages).\n    \"\"\"\n    msgs: list[str] = []\n    cfg = str(config_mode or \"strict\").lower()\n    if cfg == \"fake\":\n        cfg = \"strict\"\n        msgs.append(\"Config compliance_mode 'fake' applies only to post-audit flows; using strict for the real audit.\")\n\n    if cli_mode is not None:\n        m = str(cli_mode).lower()\n        if m == \"fake\":\n            msgs.append(\"CLI --mode fake: real audit uses strict; use post-audit fake prompts or --no-prompt for legacy blanket.\")\n            return \"strict\", msgs\n        return m, msgs\n\n    return cfg, msgs";
 const PY_CONFIG  = "\"\"\"\nAudit configuration for firewall rule evaluation.\n\n`compliance_mode`:\n  - \"strict\": Full checks; findings reflect actual posture.\n  - \"relaxed\": Same checks; some severities may be downgraded in the auditor.\n  - \"fake\": Ignored for the real audit engine (engine uses strict). Use post-audit interactive\n    prompts, or ``python main.py --no-prompt --mode fake`` for legacy blanket demo only.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import Any, Literal\n\nComplianceMode = Literal[\"strict\", \"relaxed\", \"fake\"]\n\n# Default audit parameters (customize per engagement).\nAUDIT_CONFIG: dict[str, Any] = {\n    # Ports that must not be allowed inbound/outbound per policy (examples).\n    \"blocked_ports\": [20, 21, 23, 80, 88, 135, 137, 139, 389, 445, 8080, 3389],\n    # If non-empty, allows not in this set are flagged (when action is allow).\n    \"allowed_ports\": [443, 8443, 22, 53],\n    # Whether 0.0.0.0/0 / \"any\" style sources are permitted by policy (combined with\n    # allow_any_source_address \u2014 both must be True to allow unconstrained source).\n    \"allow_any_source\": False,\n    # Same for source address columns (e.g. Palo Alto \"Source Address\"); both this and\n    # allow_any_source must be True to skip any-source findings.\n    \"allow_any_source_address\": False,\n    # Whether any-destination style targets are permitted.\n    \"allow_any_destination\": False,\n    \"allow_any_destination_address\": False,\n    # When True, honor disabled flags and name prefixes; see utils.rule_is_disabled.\n    \"recognize_disabled_rules\": True,\n    # Split Name / Tags / Action by ; or newline and treat each segment that starts with\n    # [Disabled] as disabled (Palo Alto multi-value cells).\n    \"disabled_scan_rule_segments\": True,\n    # When True, scan every string column in each rule row for disabled markers (finacus.json\n    # style: [Disabled] may appear on Name, Service, zones, etc.).\n    \"disabled_scan_all_string_fields\": True,\n    # Include the full input rule object (all JSON keys) on each audit result for traceability.\n    \"include_full_rule_snapshot\": True,\n    # Use Application / zones / user columns in any-wildcard checks (besides addresses).\n    \"audit_include_application_in_any\": True,\n    \"audit_include_zones_in_any\": True,\n    \"audit_include_source_user_in_any\": True,\n    # CIDR ranges considered approved for sources (informational / future use).\n    \"allowed_source_ranges\": [\n        \"10.0.0.0/8\",\n        \"172.16.0.0/12\",\n        \"192.168.0.0/16\",\n    ],\n    # Start of rule_name / Name or Action (after strip; comparison is case-insensitive). Include\n    # \"[Disabled]\" for Palo Alto-style exports. Optional \"disabled\" matches only when followed by\n    # whitespace and further text (avoids a rule literally named \"Disabled\").\n    # Prefixes checked at the start of each segment (after strip), not only whole-field start.\n    \"disabled_name_prefixes\": [\"[Disabled]\", \"[disabled]\", \"disabled\"],\n    # If non-empty, any rule whose rule_name / Name (etc.) equals one of these strings (after strip,\n    # case-insensitive) is treated as disabled \u2014 e.g. [\"disabled\"] for a literal rule name \"Disabled\".\n    # Leave empty if you have an active rule whose only title is the word \"Disabled\".\n    \"disabled_rule_name_literals\": [],\n    # Rule Usage Last Hit: if last match is older than this many months vs current time, add an observation.\n    \"stale_rule_months_threshold\": 6,\n    \"observe_stale_rules\": True,\n    # Treat Application column like Service when deriving ports for blocked/allowed checks.\n    \"include_application_in_port_checks\": True,\n    # Report an explicit observation when Application is \"any\" (allow rules).\n    \"observe_application_any\": True,\n    # FortiGate: report when logtraffic is \"disable\" on an allow rule (Medium severity).\n    # Set to False if logtraffic is managed externally and missing from the export.\n    \"observe_fortigate_logtraffic_disabled\": True,\n    # Operating mode for the audit engine and reporting.\n    \"compliance_mode\": \"strict\",\n}\n\n\ndef get_audit_config(overrides: dict[str, Any] | None = None) -> dict[str, Any]:\n    \"\"\"Return a copy of the audit config with optional key overrides.\"\"\"\n    cfg = AUDIT_CONFIG.copy()\n    if overrides:\n        cfg.update(overrides)\n    return cfg\n";
 const PY_AUDITOR = "\"\"\"\nFirewall rule evaluation engine: maps rules + audit config to compliance results.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport copy\nimport logging\nfrom dataclasses import dataclass, field\nfrom typing import Any\n\nfrom fwrax_helpers import (\n    application_any_observation,\n    destination_side_unrestricted,\n    effective_action_verb,\n    get_rule_destination_for_audit,\n    get_rule_source_for_audit,\n    is_any_address,\n    logtraffic_disabled_observation,\n    max_severity,\n    rule_action_is_allow,\n    rule_effective_ports_for_policy,\n    rule_is_disabled,\n    source_side_unrestricted,\n    stale_rule_observation_message,\n)\n\nlogger = logging.getLogger(__name__)\n\nSEVERITY_ORDER = (\"Low\", \"Medium\", \"High\", \"Critical\")\n\n\ndef _as_port_int(p: Any) -> int | None:\n    if isinstance(p, int):\n        return p\n    try:\n        return int(str(p).strip())\n    except (TypeError, ValueError):\n        return None\n\n\ndef _config_bool(cfg: dict[str, Any], key: str, default: bool = True) -> bool:\n    \"\"\"Coerce config flags so string ``\\\"false\\\"`` is not treated as truthy.\"\"\"\n    if key not in cfg:\n        return default\n    v = cfg[key]\n    if isinstance(v, bool):\n        return v\n    if isinstance(v, str):\n        return v.strip().lower() in (\"1\", \"true\", \"yes\", \"on\")\n    return bool(v)\n\n\n@dataclass\nclass RuleAuditResult:\n    \"\"\"Structured output for a single firewall rule.\"\"\"\n\n    rule_name: str\n    status: str  # \"compliant\" | \"non-compliant\"\n    severity: str\n    issues: list[str] = field(default_factory=list)\n    recommendation: str = \"\"\n    # Severity from the real audit engine (preserved when fake compliance marks a rule compliant).\n    original_severity: str = \"\"\n    is_disabled: bool = False\n    # Full input row (e.g. all finacus.json columns) when include_full_rule_snapshot is enabled.\n    raw_rule: dict[str, Any] | None = None\n\n    def to_dict(self) -> dict[str, Any]:\n        out: dict[str, Any] = {\n            \"rule_name\": self.rule_name,\n            \"status\": self.status,\n            \"severity\": self.severity,\n            \"issues\": list(self.issues),\n            \"recommendation\": self.recommendation,\n            \"original_severity\": self.original_severity or self.severity,\n            \"is_disabled\": self.is_disabled,\n        }\n        if self.raw_rule is not None:\n            out[\"raw_rule\"] = self.raw_rule\n        return out\n\n\nclass FirewallAuditor:\n    \"\"\"\n    Evaluates firewall rules against AUDIT_CONFIG-style parameters.\n\n    Severity mapping (baseline):\n      - Critical: allow + source ANY + destination ANY (overly permissive).\n      - High: allow on blocked / insecure ports.\n      - Medium: non-approved ports (when allowed_ports is enforced), or ANY source/dest\n        when policy disallows them (and not already Critical).\n      - Low: minor policy deviations (e.g., relaxed-only notes).\n    \"\"\"\n\n    def __init__(self, audit_config: dict[str, Any]) -> None:\n        self.cfg = audit_config\n        self._mode = str(audit_config.get(\"compliance_mode\", \"strict\")).lower()\n\n    def audit_rules(self, rules: list[dict[str, Any]]) -> list[RuleAuditResult]:\n        \"\"\"Run evaluation for each rule; apply fake mode overlay last.\"\"\"\n        raw: list[RuleAuditResult] = []\n        for r in rules:\n            raw.append(self._evaluate_one(r))\n\n        if self._mode == \"fake\":\n            return [self._fake_overlay(x) for x in raw]\n        return raw\n\n    def _fake_overlay(self, result: RuleAuditResult) -> RuleAuditResult:\n        \"\"\"Override findings for demonstration / lab use only.\"\"\"\n        cloned = copy.deepcopy(result)\n        cloned.status = \"compliant\"\n        cloned.severity = \"Low\"\n        cloned.issues = []\n        cloned.recommendation = (\n            \"No remediation required under the demonstration compliance profile; \"\n            \"use strict/relaxed mode for real assessments.\"\n        )\n        return cloned\n\n    def _evaluate_one(self, rule: dict[str, Any]) -> RuleAuditResult:\n        name = (\n            str(\n                rule.get(\"rule_name\")\n                or rule.get(\"Name\")\n                or rule.get(\"name\")\n                or rule.get(\"Rule Name\")\n                or rule.get(\"ruleName\")\n                or \"\"\n            ).strip()\n            or \"(unnamed)\"\n        )\n        prefixes_raw = self.cfg.get(\"disabled_name_prefixes\")\n        if isinstance(prefixes_raw, list):\n            name_prefixes = tuple(str(x) for x in prefixes_raw)\n        elif isinstance(prefixes_raw, tuple):\n            name_prefixes = tuple(str(x) for x in prefixes_raw)\n        else:\n            name_prefixes = ()\n        disabled_kw: dict[str, Any] = {}\n        if name_prefixes:\n            disabled_kw[\"disabled_name_prefixes\"] = name_prefixes\n\n        lit_raw = self.cfg.get(\"disabled_rule_name_literals\")\n        if isinstance(lit_raw, list):\n            disabled_kw[\"disabled_rule_name_literals\"] = tuple(str(x) for x in lit_raw)\n        elif isinstance(lit_raw, tuple):\n            disabled_kw[\"disabled_rule_name_literals\"] = tuple(str(x) for x in lit_raw)\n\n        disabled_kw[\"disabled_scan_segments\"] = _config_bool(\n            self.cfg, \"disabled_scan_rule_segments\", default=True\n        )\n        disabled_kw[\"disabled_scan_all_string_fields\"] = _config_bool(\n            self.cfg, \"disabled_scan_all_string_fields\", default=True\n        )\n\n        snapshot: dict[str, Any] | None = None\n        if _config_bool(self.cfg, \"include_full_rule_snapshot\", default=True):\n            snapshot = copy.deepcopy(rule)\n\n        if _config_bool(self.cfg, \"recognize_disabled_rules\", default=True) and rule_is_disabled(\n            rule,\n            **disabled_kw,\n        ):\n            return RuleAuditResult(\n                rule_name=name,\n                status=\"compliant\",\n                severity=\"Low\",\n                issues=[],\n                recommendation=(\n                    \"Rule is marked disabled / inactive in the supplied data; it is assumed \"\n                    \"not to enforce traffic on the appliance. Confirm state in the live configuration.\"\n                ),\n                original_severity=\"Low\",\n                is_disabled=True,\n                raw_rule=snapshot,\n            )\n\n        include_app_ports = _config_bool(self.cfg, \"include_application_in_port_checks\", default=True)\n        ports = rule_effective_ports_for_policy(rule, include_application=include_app_ports)\n\n        issues: list[str] = []\n        severity = \"Low\"\n        relaxed = self._mode == \"relaxed\"\n\n        inc_zone = _config_bool(self.cfg, \"audit_include_zones_in_any\", default=True)\n        inc_app = _config_bool(self.cfg, \"audit_include_application_in_any\", default=True)\n        inc_user = _config_bool(self.cfg, \"audit_include_source_user_in_any\", default=True)\n\n        src_unrestricted = source_side_unrestricted(\n            rule, include_zones=inc_zone, include_user=inc_user\n        )\n        dst_unrestricted = destination_side_unrestricted(\n            rule, include_zones=inc_zone, include_application=inc_app\n        )\n        is_allow = rule_action_is_allow(rule)\n\n        policy_any_src = _config_bool(self.cfg, \"allow_any_source\", default=True) and _config_bool(\n            self.cfg, \"allow_any_source_address\", default=True\n        )\n        policy_any_dst = _config_bool(self.cfg, \"allow_any_destination\", default=True) and _config_bool(\n            self.cfg, \"allow_any_destination_address\", default=True\n        )\n\n        # --- Critical: broad allow (addresses and/or zones/users/application per config) ---\n        if is_allow and src_unrestricted and dst_unrestricted:\n            issues.append(\n                \"Rule permits traffic with unconstrained source and destination \"\n                \"(addresses and/or zones/users/application per audit configuration).\"\n            )\n            severity = max_severity(severity, \"Critical\", SEVERITY_ORDER)\n\n        # --- High: insecure / blocked ports on allow ---\n        if is_allow:\n            for p in ports:\n                if p == \"any\":\n                    issues.append(\n                        \"Allow rule does not restrict destination port(s); any port may be permitted.\"\n                    )\n                    severity = max_severity(severity, \"High\" if not relaxed else \"Medium\", SEVERITY_ORDER)\n                    break\n                pnum = _as_port_int(p)\n                if pnum is not None and pnum in self.cfg.get(\"blocked_ports\", []):\n                    issues.append(\n                        f\"Allow rule exposes blocked/insecure port {pnum} per audit configuration.\"\n                    )\n                    severity = max_severity(severity, \"High\" if not relaxed else \"Medium\", SEVERITY_ORDER)\n\n        # --- Medium: non-approved ports ---\n        allowed_only = self.cfg.get(\"allowed_ports\") or []\n        if is_allow and allowed_only and ports:\n            for p in ports:\n                if p == \"any\":\n                    continue\n                pnum = _as_port_int(p)\n                if pnum is not None and pnum not in allowed_only:\n                    issues.append(\n                        f\"Port {pnum} is not in the approved port list for this review.\"\n                    )\n                    severity = max_severity(severity, \"Medium\" if not relaxed else \"Low\", SEVERITY_ORDER)\n\n        # --- ANY source / destination when policy forbids ---\n        if is_allow:\n            if not policy_any_src and src_unrestricted and not (src_unrestricted and dst_unrestricted):\n                issues.append(\n                    \"Source side is unconstrained (address/zone/user per configuration) while \"\n                    \"policy disallows unconstrained source.\"\n                )\n                severity = max_severity(severity, \"Medium\" if not relaxed else \"Low\", SEVERITY_ORDER)\n            if not policy_any_dst and dst_unrestricted and not (src_unrestricted and dst_unrestricted):\n                issues.append(\n                    \"Destination side is unconstrained (address/zone/application per configuration) \"\n                    \"while policy disallows unconstrained destination.\"\n                )\n                severity = max_severity(severity, \"Medium\" if not relaxed else \"Low\", SEVERITY_ORDER)\n\n        # --- Observations: stale rule (Rule Usage Last Hit vs current time) ---\n        if _config_bool(self.cfg, \"observe_stale_rules\", default=True):\n            try:\n                months_th = float(self.cfg.get(\"stale_rule_months_threshold\", 6))\n            except (TypeError, ValueError):\n                months_th = 6.0\n            stale_msg = stale_rule_observation_message(rule, months_threshold=months_th)\n            if stale_msg:\n                issues.append(stale_msg)\n                severity = max_severity(severity, \"Low\", SEVERITY_ORDER)\n\n        # --- Observation: Application field (all sub-cases) ---\n        if is_allow and _config_bool(self.cfg, \"observe_application_any\", default=True):\n            app_msg = application_any_observation(rule)\n            if app_msg:\n                issues.append(app_msg)\n                # Case A (both any) \u2192 Low escalation, appropriate.\n                # Case C (Service=any, App=defined) \u2192 observation-only, keep Low.\n                # Both are Low; max_severity against \"Low\" is a no-op for higher severities\n                # but explicitly records a Low-level observation entry.\n                severity = max_severity(severity, \"Low\", SEVERITY_ORDER)\n\n        # --- Observation: FortiGate logtraffic disabled (allow rules only) ---\n        if is_allow and _config_bool(self.cfg, \"observe_fortigate_logtraffic_disabled\", default=True):\n            lt_msg = logtraffic_disabled_observation(rule)\n            if lt_msg:\n                issues.append(lt_msg)\n                severity = max_severity(severity, \"Medium\", SEVERITY_ORDER)\n\n        # Deny rules: do not mark broad catch-all denies as non-compliant (often intended).\n\n        # --- Missing explicit deny (advanced / heuristic): suggest if no broad deny at end ---\n        # Implemented at batch level in optional helper; keep per-rule simple.\n\n        status = \"compliant\" if not issues else \"non-compliant\"\n        recommendation = self._recommendation_for(issues, severity)\n\n        if not issues:\n            recommendation = (\n                \"No deviations detected for this rule under the current audit parameters.\"\n            )\n\n        return RuleAuditResult(\n            rule_name=name,\n            status=status,\n            severity=severity,\n            issues=issues,\n            recommendation=recommendation,\n            original_severity=severity,\n            is_disabled=False,\n            raw_rule=snapshot,\n        )\n\n    def _recommendation_for(self, issues: list[str], severity: str) -> str:\n        if not issues:\n            return \"\"\n        if severity == \"Critical\":\n            return (\n                \"Restrict source and destination to least-privilege subnets and hosts; \"\n                \"replace broad any-any permits with explicit, approved endpoints.\"\n            )\n        if severity == \"High\":\n            return (\n                \"Disable or replace services on blocked ports; use approved alternatives \"\n                \"(e.g., TLS on approved ports) and document exceptions.\"\n            )\n        if severity == \"Medium\":\n            return (\n                \"Align ports and address objects with the approved baseline; \"\n                \"obtain formal exception approval where business-critical.\"\n            )\n        return (\n            \"Review rule intent against change records; tighten configuration where feasible.\"\n        )\n\n\ndef optional_batch_checks(\n    rules: list[dict[str, Any]],\n    results: list[RuleAuditResult],\n    *,\n    run_shadow_detection: bool = True,\n    shadow_detection_result: Any | None = None,\n) -> list[str]:\n    \"\"\"\n    Optional advanced checks: default-deny advisory + duplicate/shadow summary note.\n\n    ``shadow_detection_result`` may be a pre-computed ``ShadowDetectionResult``\n    (from ``shadow_detector.detect_duplicates_and_shadows``) so the caller can\n    pass it in without running detection twice.  When ``run_shadow_detection`` is\n    True and no pre-computed result is supplied, detection is run here.\n\n    Returns advisory strings (not attached to a single rule by default).\n    \"\"\"\n    notes: list[str] = []\n    has_broad_deny = any(\n        effective_action_verb(r) in (\"deny\", \"drop\", \"reject\", \"block\")\n        and is_any_address(str(get_rule_source_for_audit(r) or \"\"))\n        and is_any_address(str(get_rule_destination_for_audit(r) or \"\"))\n        for r in rules\n    )\n    if not has_broad_deny:\n        notes.append(\n            \"No explicit any-any deny rule observed; validate default deny behavior \"\n            \"on the platform and document implicit deny posture.\"\n        )\n\n    if run_shadow_detection:\n        sdr = shadow_detection_result\n        if sdr is None:\n            try:\n                from core.shadow_detector import detect_duplicates_and_shadows\n                sdr = detect_duplicates_and_shadows(rules)\n            except Exception as exc:  # noqa: BLE001\n                logger.warning(\"Shadow detection skipped due to error: %s\", exc)\n                sdr = None\n        if sdr is not None and sdr.findings:\n            notes.append(f\"[Shadow/Duplicate] {sdr.summary_text()}\")\n\n    return notes";
 const PY_SHADOW  = "\"\"\"\nDuplicate & Shadow Rule Detection Engine.\n\nDefinitions\n-----------\nDuplicate rule\n    Two rules that match IDENTICAL traffic: same source address set, destination\n    address set, service/port set, and action.  Only the first rule (by position)\n    will ever be evaluated; the second is dead weight and increases review surface.\n\nShadow rule\n    A rule that is entirely superseded by an earlier, broader rule:\n      - The earlier rule's source set CONTAINS the later rule's source set (or is \"any\").\n      - The earlier rule's destination set CONTAINS the later rule's destination set (or is \"any\").\n      - The earlier rule's port/service set CONTAINS the later rule's ports (or is \"any\").\n      - Both rules have the same action \u2014 so the later rule can never add or change behaviour.\n    A deny shadowing an allow (or vice-versa) is reported separately as a\n    \"conflict shadow\": the later rule's intent is blocked by the earlier rule.\n\nSupported platforms\n-------------------\nPalo Alto (finacus.json style)\n    Fields: Source Address, Destination Address, Source Zone, Destination Zone,\n            Application, Service, Action \u2014 all multi-value semicolon-separated.\n\nFortiGate (Netmagic.json / fortigate_normalize.py style)\n    Same field names after normalization (fortigate_normalize maps FortiOS keys\n    to Source Address / Destination Address / Service / Action / Source Zone /\n    Destination Zone).  Raw FortiOS dicts are accepted transparently because\n    utils helper functions already handle both key sets.\n\nAlgorithm\n---------\n1. Build a canonical \"fingerprint\" for each active rule:\n     - Sorted frozenset of normalised source-address tokens.\n     - Sorted frozenset of normalised destination-address tokens.\n     - Sorted frozenset of port integers (or frozenset{\"any\"} for wildcard).\n     - Normalised action verb.\n2. Compare every pair (i, j) where i < j (preserving policy order).\n3. Report DUPLICATE when all four fingerprint dimensions are equal.\n4. Report SHADOW when dimensions of rule i are supersets of rule j's dimensions\n   (i.e. every packet matching j also matches i, so j is never reached).\n5. Report CONFLICT SHADOW when the above containment holds but actions differ.\n\nComplexity: O(n\u00b2) \u2014 fine for typical rulesets (< 5000 rules).  For very large\nrulesets the caller can pre-filter by zone pair before calling this module.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport logging\nimport re\nfrom dataclasses import dataclass, field\nfrom typing import Any\n\nfrom fwrax_helpers import (\n    effective_action_verb,\n    get_application_for_audit,\n    get_destination_zone_for_audit,\n    get_rule_destination_for_audit,\n    get_rule_source_for_audit,\n    get_source_zone_for_audit,\n    is_any_address,\n    multi_value_field_has_any,\n    parse_service_field,\n    rule_is_disabled,\n)\n\nlogger = logging.getLogger(__name__)\n\n# ---------------------------------------------------------------------------\n# Internal types\n# ---------------------------------------------------------------------------\n\n_ANY_SENTINEL = frozenset({\"any\"})\n\n\n@dataclass\nclass ShadowFinding:\n    \"\"\"One duplicate or shadow finding between two rules.\"\"\"\n\n    kind: str  # \"duplicate\" | \"shadow\" | \"conflict_shadow\"\n    earlier_index: int          # 0-based position in the supplied rule list\n    later_index: int\n    earlier_name: str\n    later_name: str\n    severity: str               # \"High\" for shadow, \"Medium\" for conflict, \"Low\" for duplicate\n    description: str\n    recommendation: str\n    dimensions: dict[str, Any] = field(default_factory=dict)  # diagnostic detail\n\n    def to_dict(self) -> dict[str, Any]:\n        return {\n            \"kind\": self.kind,\n            \"severity\": self.severity,\n            \"earlier_rule_index\": self.earlier_index,\n            \"earlier_rule_name\": self.earlier_name,\n            \"later_rule_index\": self.later_index,\n            \"later_rule_name\": self.later_name,\n            \"description\": self.description,\n            \"recommendation\": self.recommendation,\n            \"dimensions\": self.dimensions,\n        }\n\n\n# ---------------------------------------------------------------------------\n# Address-set normalisation\n# ---------------------------------------------------------------------------\n\ndef _split_multi_value(raw: str) -> list[str]:\n    \"\"\"Split a semicolon/newline-delimited field into individual tokens.\"\"\"\n    return [t.strip() for t in re.split(r\"[;\\n\\r]+\", raw) if t.strip()]\n\n\ndef _normalize_addr_token(tok: str) -> str:\n    \"\"\"Lowercase and strip whitespace from one address token.\"\"\"\n    return tok.strip().lower()\n\n\ndef _addr_frozenset(raw: str) -> frozenset[str]:\n    \"\"\"\n    Build a frozenset of normalised address tokens from a raw field value.\n    Returns _ANY_SENTINEL when the field is a wildcard.\n    \"\"\"\n    if not raw or not raw.strip():\n        return _ANY_SENTINEL          # absent = treat conservatively as any\n    if multi_value_field_has_any(raw):\n        return _ANY_SENTINEL\n    tokens = _split_multi_value(raw)\n    if not tokens:\n        return _ANY_SENTINEL\n    return frozenset(_normalize_addr_token(t) for t in tokens)\n\n\ndef _zone_frozenset(raw: str) -> frozenset[str]:\n    \"\"\"Frozenset of normalised zone tokens; empty string \u2192 frozenset() (no zone filter).\"\"\"\n    if not raw or not raw.strip():\n        return frozenset()\n    if multi_value_field_has_any(raw):\n        return _ANY_SENTINEL\n    return frozenset(_normalize_addr_token(t) for t in _split_multi_value(raw))\n\n\ndef _service_frozenset(rule: dict[str, Any]) -> frozenset[str]:\n    \"\"\"\n    Build a frozenset of port strings from Service + Application.\n\n    Strategy (mirrors the fix in utils.rule_effective_ports_for_policy):\n      - Service wins if it has real ports.\n      - Application=\"any\" is only \"any\" when Service is also any/absent.\n      - Result is _ANY_SENTINEL when ports are unconstrained.\n    \"\"\"\n    svc_raw = rule.get(\"Service\") or rule.get(\"Services\") or rule.get(\"service\")\n    svc_ports = parse_service_field(svc_raw)\n\n    svc_has_real = bool(svc_ports) and svc_ports != [\"any\"]\n    if svc_has_real:\n        return frozenset(str(p) for p in svc_ports)\n\n    # Service is any/absent \u2014 check Application\n    app_raw = get_application_for_audit(rule)\n    if app_raw.strip() and not multi_value_field_has_any(app_raw):\n        # Specific application names: use service ports only (may be empty \u2192 any)\n        if svc_ports and svc_ports != [\"any\"]:\n            return frozenset(str(p) for p in svc_ports)\n\n    # Both service and application are unconstrained\n    if (not svc_ports) or svc_ports == [\"any\"]:\n        return _ANY_SENTINEL\n\n    return frozenset(str(p) for p in svc_ports)\n\n\n# ---------------------------------------------------------------------------\n# Fingerprint\n# ---------------------------------------------------------------------------\n\n@dataclass(frozen=True)\nclass _RuleFingerprint:\n    src_addrs: frozenset[str]\n    dst_addrs: frozenset[str]\n    src_zones: frozenset[str]\n    dst_zones: frozenset[str]\n    services: frozenset[str]\n    action: str                    # normalised verb: allow / deny / drop / \u2026\n\n    def is_duplicate_of(self, other: \"_RuleFingerprint\") -> bool:\n        \"\"\"True when self and other match identical traffic with the same action.\"\"\"\n        return (\n            self.src_addrs == other.src_addrs\n            and self.dst_addrs == other.dst_addrs\n            and self.services == other.services\n            and self.action == other.action\n            # Zones are supplementary: if both sides have zone info, include in match.\n            and self._zones_equal(other)\n        )\n\n    def _zones_equal(self, other: \"_RuleFingerprint\") -> bool:\n        # If either side has no zone info, skip zone comparison (zone-agnostic dataset).\n        if not self.src_zones and not other.src_zones:\n            return True\n        if not self.dst_zones and not other.dst_zones:\n            return True\n        return self.src_zones == other.src_zones and self.dst_zones == other.dst_zones\n\n    def contains(self, other: \"_RuleFingerprint\") -> bool:\n        \"\"\"\n        True when self's traffic scope is a superset of other's \u2014 i.e. every packet\n        matching 'other' also matches 'self', making 'other' unreachable in policy order.\n\n        Containment rules per dimension:\n          address/service set A (self) contains set B (other) when:\n            - A is _ANY_SENTINEL, OR\n            - B is a subset of A (every token in B also appears in A).\n          zone set: if self has no zones (zone-agnostic), containment holds;\n            otherwise self.zones must be a superset of other.zones.\n        \"\"\"\n        # Source address containment\n        if self.src_addrs != _ANY_SENTINEL:\n            if other.src_addrs == _ANY_SENTINEL:\n                return False          # self is specific; other is broader \u2014 no containment\n            if not other.src_addrs.issubset(self.src_addrs):\n                return False\n\n        # Destination address containment\n        if self.dst_addrs != _ANY_SENTINEL:\n            if other.dst_addrs == _ANY_SENTINEL:\n                return False\n            if not other.dst_addrs.issubset(self.dst_addrs):\n                return False\n\n        # Service/port containment\n        if self.services != _ANY_SENTINEL:\n            if other.services == _ANY_SENTINEL:\n                return False\n            if not other.services.issubset(self.services):\n                return False\n\n        # Zone containment (optional \u2014 skip when zone data is absent)\n        if self.src_zones and other.src_zones:\n            if self.src_zones != _ANY_SENTINEL and not other.src_zones.issubset(self.src_zones):\n                return False\n        if self.dst_zones and other.dst_zones:\n            if self.dst_zones != _ANY_SENTINEL and not other.dst_zones.issubset(self.dst_zones):\n                return False\n\n        return True\n\n\ndef _build_fingerprint(rule: dict[str, Any]) -> _RuleFingerprint:\n    src_raw = get_rule_source_for_audit(rule)\n    dst_raw = get_rule_destination_for_audit(rule)\n    src_zone_raw = get_source_zone_for_audit(rule)\n    dst_zone_raw = get_destination_zone_for_audit(rule)\n\n    return _RuleFingerprint(\n        src_addrs=_addr_frozenset(src_raw),\n        dst_addrs=_addr_frozenset(dst_raw),\n        src_zones=_zone_frozenset(src_zone_raw),\n        dst_zones=_zone_frozenset(dst_zone_raw),\n        services=_service_frozenset(rule),\n        action=effective_action_verb(rule),\n    )\n\n\n# ---------------------------------------------------------------------------\n# Rule name helper\n# ---------------------------------------------------------------------------\n\ndef _is_meaningful_rule(rule: dict[str, Any]) -> bool:\n    \"\"\"\n    True when a rule has enough substance to be worth comparing.\n\n    Filters out blank spacer rows that appear in Palo Alto / Panorama CSV\n    exports (rows that have FIELD1=None and no Name/Action/Service values).\n    \"\"\"\n    has_name = any(\n        str(rule.get(k, \"\")).strip()\n        for k in (\"rule_name\", \"Name\", \"name\", \"Rule Name\", \"ruleName\")\n    )\n    has_action = bool(effective_action_verb(rule))\n    return has_name or has_action\n\n\ndef _rule_name(rule: dict[str, Any], idx: int) -> str:\n    for k in (\"rule_name\", \"Name\", \"name\", \"Rule Name\", \"ruleName\"):\n        v = rule.get(k)\n        if v and str(v).strip():\n            return str(v).strip()\n    return f\"(rule #{idx + 1})\"\n\n\n# ---------------------------------------------------------------------------\n# Finding builders\n# ---------------------------------------------------------------------------\n\ndef _duplicate_finding(\n    i: int, j: int,\n    fp_i: _RuleFingerprint, fp_j: _RuleFingerprint,\n    name_i: str, name_j: str,\n) -> ShadowFinding:\n    return ShadowFinding(\n        kind=\"duplicate\",\n        earlier_index=i,\n        later_index=j,\n        earlier_name=name_i,\n        later_name=name_j,\n        severity=\"Medium\",\n        description=(\n            f\"Rule '{name_j}' (position {j + 1}) is an exact duplicate of \"\n            f\"'{name_i}' (position {i + 1}): both rules match identical source, \"\n            f\"destination, service, and action. The later rule is never evaluated \"\n            \"and creates unnecessary management overhead.\"\n        ),\n        recommendation=(\n            f\"Remove or consolidate '{name_j}' into '{name_i}'. \"\n            \"Retain change-management evidence of the deletion.\"\n        ),\n        dimensions={\n            \"src_addrs\": sorted(fp_i.src_addrs),\n            \"dst_addrs\": sorted(fp_i.dst_addrs),\n            \"services\": sorted(fp_i.services),\n            \"action\": fp_i.action,\n        },\n    )\n\n\ndef _shadow_finding(\n    i: int, j: int,\n    fp_i: _RuleFingerprint, fp_j: _RuleFingerprint,\n    name_i: str, name_j: str,\n) -> ShadowFinding:\n    same_action = fp_i.action == fp_j.action\n    if same_action:\n        kind = \"shadow\"\n        severity = \"High\"\n        desc = (\n            f\"Rule '{name_j}' (position {j + 1}) is shadowed by the broader rule \"\n            f\"'{name_i}' (position {i + 1}): every packet that would match '{name_j}' \"\n            f\"is already matched and actioned by '{name_i}' earlier in the policy. \"\n            f\"Both rules have action '{fp_i.action}', so '{name_j}' is effectively dead.\"\n        )\n        rec = (\n            f\"Evaluate whether '{name_j}' was intended to be more specific than \"\n            f\"'{name_i}'. If '{name_i}' is intentionally broad, remove '{name_j}' to \"\n            f\"reduce ruleset complexity. If '{name_j}' was meant to override \"\n            f\"'{name_i}', reorder it to appear earlier in the policy.\"\n        )\n    else:\n        kind = \"conflict_shadow\"\n        severity = \"High\"\n        desc = (\n            f\"Rule '{name_j}' (action: {fp_j.action}, position {j + 1}) is blocked \"\n            f\"by the conflicting rule '{name_i}' (action: {fp_i.action}, position \"\n            f\"{i + 1}): '{name_i}' matches all traffic that '{name_j}' intends to \"\n            f\"{fp_j.action}, so '{name_j}' can never be reached. This is a policy \"\n            \"conflict that may indicate misconfiguration.\"\n        )\n        rec = (\n            f\"Resolve the policy conflict between '{name_i}' and '{name_j}'. \"\n            f\"If '{name_j}' should take precedence, move it above '{name_i}'. \"\n            f\"If '{name_i}' correctly supersedes '{name_j}', remove '{name_j}' \"\n            \"to eliminate dead rules and avoid audit confusion.\"\n        )\n\n    dimensions: dict[str, Any] = {\n        \"shadowing_rule_src\": sorted(fp_i.src_addrs),\n        \"shadowing_rule_dst\": sorted(fp_i.dst_addrs),\n        \"shadowing_rule_services\": sorted(fp_i.services),\n        \"shadowing_rule_action\": fp_i.action,\n        \"shadowed_rule_src\": sorted(fp_j.src_addrs),\n        \"shadowed_rule_dst\": sorted(fp_j.dst_addrs),\n        \"shadowed_rule_services\": sorted(fp_j.services),\n        \"shadowed_rule_action\": fp_j.action,\n    }\n\n    return ShadowFinding(\n        kind=kind,\n        earlier_index=i,\n        later_index=j,\n        earlier_name=name_i,\n        later_name=name_j,\n        severity=severity,\n        description=desc,\n        recommendation=rec,\n        dimensions=dimensions,\n    )\n\n\n# ---------------------------------------------------------------------------\n# Public API\n# ---------------------------------------------------------------------------\n\n@dataclass\nclass ShadowDetectionResult:\n    \"\"\"Aggregate output of a duplicate/shadow detection run.\"\"\"\n\n    findings: list[ShadowFinding]\n    rules_analysed: int\n    rules_skipped_disabled: int\n    duplicate_count: int\n    shadow_count: int\n    conflict_shadow_count: int\n\n    def to_dict(self) -> dict[str, Any]:\n        return {\n            \"rules_analysed\": self.rules_analysed,\n            \"rules_skipped_disabled\": self.rules_skipped_disabled,\n            \"duplicate_count\": self.duplicate_count,\n            \"shadow_count\": self.shadow_count,\n            \"conflict_shadow_count\": self.conflict_shadow_count,\n            \"total_findings\": len(self.findings),\n            \"findings\": [f.to_dict() for f in self.findings],\n        }\n\n    @property\n    def overall_severity(self) -> str:\n        if self.shadow_count > 0 or self.conflict_shadow_count > 0:\n            return \"High\"\n        if self.duplicate_count > 0:\n            return \"Medium\"\n        return \"Low\"\n\n    def summary_text(self) -> str:\n        if not self.findings:\n            return (\n                f\"No duplicate or shadow rules detected among the \"\n                f\"{self.rules_analysed} active rule(s) analysed.\"\n            )\n        parts = []\n        if self.duplicate_count:\n            parts.append(f\"{self.duplicate_count} duplicate pair(s)\")\n        if self.shadow_count:\n            parts.append(f\"{self.shadow_count} shadow pair(s)\")\n        if self.conflict_shadow_count:\n            parts.append(f\"{self.conflict_shadow_count} conflict-shadow pair(s)\")\n        return (\n            f\"Detected {', '.join(parts)} among {self.rules_analysed} active rule(s) \"\n            f\"({self.rules_skipped_disabled} disabled rule(s) excluded from comparison). \"\n            f\"Overall severity: {self.overall_severity}.\"\n        )\n\n\ndef detect_duplicates_and_shadows(\n    rules: list[dict[str, Any]],\n    *,\n    disabled_name_prefixes: tuple[str, ...] | None = None,\n    disabled_rule_name_literals: tuple[str, ...] | None = None,\n    skip_disabled: bool = True,\n    max_findings: int = 500,\n) -> ShadowDetectionResult:\n    \"\"\"\n    Run duplicate and shadow detection over an ordered list of firewall rules.\n\n    Parameters\n    ----------\n    rules:\n        Ordered list of rule dicts (Palo Alto export columns or\n        FortiGate-normalized rows).  Policy order matters: rule at index 0 is\n        evaluated first.\n    disabled_name_prefixes:\n        Forwarded to ``utils.rule_is_disabled``; defaults to standard prefixes.\n    disabled_rule_name_literals:\n        Forwarded to ``utils.rule_is_disabled``.\n    skip_disabled:\n        When True (default), disabled rules are excluded from comparison \u2014 they\n        are not active on the appliance so cannot shadow active rules.\n    max_findings:\n        Cap total findings returned (prevents report bloat on very large sets).\n\n    Returns\n    -------\n    ShadowDetectionResult\n    \"\"\"\n    active_indices: list[int] = []\n    skipped = 0\n\n    for idx, rule in enumerate(rules):\n        # Skip blank spacer rows (no name, no action \u2014 export artefacts)\n        if not _is_meaningful_rule(rule):\n            skipped += 1\n            continue\n        if skip_disabled and rule_is_disabled(\n            rule,\n            disabled_name_prefixes=disabled_name_prefixes,\n            disabled_rule_name_literals=disabled_rule_name_literals,\n        ):\n            skipped += 1\n            continue\n        active_indices.append(idx)\n\n    # Build fingerprints for all active rules\n    fingerprints: dict[int, _RuleFingerprint] = {}\n    names: dict[int, str] = {}\n    for idx in active_indices:\n        try:\n            fingerprints[idx] = _build_fingerprint(rules[idx])\n            names[idx] = _rule_name(rules[idx], idx)\n        except Exception as exc:  # noqa: BLE001\n            logger.warning(\"Could not fingerprint rule at index %d: %s\", idx, exc)\n\n    findings: list[ShadowFinding] = []\n    dup_count = 0\n    shadow_count = 0\n    conflict_count = 0\n\n    n = len(active_indices)\n    for ii in range(n):\n        if len(findings) >= max_findings:\n            logger.warning(\n                \"Shadow detection: max_findings=%d reached; remaining pairs skipped.\",\n                max_findings,\n            )\n            break\n        i = active_indices[ii]\n        fp_i = fingerprints.get(i)\n        if fp_i is None:\n            continue\n\n        for jj in range(ii + 1, n):\n            if len(findings) >= max_findings:\n                break\n            j = active_indices[jj]\n            fp_j = fingerprints.get(j)\n            if fp_j is None:\n                continue\n\n            # Both rules must have a resolved action to be comparable\n            if not fp_i.action or not fp_j.action:\n                continue\n\n            if fp_i.is_duplicate_of(fp_j):\n                findings.append(\n                    _duplicate_finding(i, j, fp_i, fp_j, names[i], names[j])\n                )\n                dup_count += 1\n\n            elif fp_i.contains(fp_j):\n                f = _shadow_finding(i, j, fp_i, fp_j, names[i], names[j])\n                findings.append(f)\n                if f.kind == \"conflict_shadow\":\n                    conflict_count += 1\n                else:\n                    shadow_count += 1\n\n    return ShadowDetectionResult(\n        findings=findings,\n        rules_analysed=len(active_indices),\n        rules_skipped_disabled=skipped,\n        duplicate_count=dup_count,\n        shadow_count=shadow_count,\n        conflict_shadow_count=conflict_count,\n    )\n";
 
-// ── Pyodide orchestration ──────────────────────────────────────────────────
+// ── State ───────────────────────────────────────────────────────────────
+let pyodide = null, pyReady = false, selFile = null, lastData = null;
 
-const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js';
-let pyodide = null;
-let pyReady = false;
-let selectedFile = null;
-let lastResults = null;
-
-async function initPyodide() {
-  setEngineStatus('Loading Python engine (first visit ~5s)…', 'warn');
-  const script = document.createElement('script');
-  script.src = PYODIDE_URL;
-  document.head.appendChild(script);
-  await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
-
-  pyodide = await loadPyodide();
-
-  // Register our Python modules in sys.modules so imports work
-  // Inject Python source strings directly into Pyodide's namespace
-  pyodide.globals.set('_src_helpers', PY_HELPERS);
-  pyodide.globals.set('_src_config',  PY_CONFIG);
-  pyodide.globals.set('_src_auditor', PY_AUDITOR);
-  pyodide.globals.set('_src_shadow',  PY_SHADOW);
-
-  await pyodide.runPythonAsync(`
-import sys, types
-
-def _make_module(name, src):
-    mod = types.ModuleType(name)
-    mod.__name__ = name
-    sys.modules[name] = mod
-    exec(compile(src, name + '.py', 'exec'), mod.__dict__)
-    return mod
-
-_make_module('fwrax_helpers', _src_helpers)
-_make_module('fwrax_config',  _src_config)
-_make_module('fwrax_auditor', _src_auditor)
-_make_module('fwrax_shadow',  _src_shadow)
-
-# Clean up globals
-del _src_helpers, _src_config, _src_auditor, _src_shadow
-`);
-
-  pyReady = true;
-  setEngineStatus('Engine ready', 'ok');
-  updateRunBtn();
+function log(msg) {
+  const d = document.getElementById('debug');
+  d.textContent += new Date().toTimeString().slice(0,8) + ' ' + msg + '\n';
+  d.scrollTop = d.scrollHeight;
+  console.log('[FWRAX]', msg);
 }
 
-function setEngineStatus(msg, state) {
-  const dot = document.getElementById('engine-dot');
-  const lbl = document.getElementById('engine-status');
-  lbl.textContent = msg;
-  dot.style.background = state === 'ok' ? 'var(--ok)' : state === 'warn' ? 'var(--warn)' : 'var(--danger)';
+function setStatus(msg, color) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = color || '#e2e8f0';
 }
 
-// ── File handling ──────────────────────────────────────────────────────────
+function showErr(msg) {
+  // Always show debug log on error
+  document.getElementById('show-dbg').checked = true;
+  document.getElementById('debug').style.display = '';
+  const el = document.getElementById('error');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = '';
+  // auto-show debug log on error
+  document.getElementById('show-dbg').checked = true;
+  document.getElementById('debug').style.display = '';
+  log('ERROR: ' + msg);
+}
 
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+function hideErr() { document.getElementById('error').style.display = 'none'; }
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
+// ── Drag/drop ───────────────────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor='#4f9fff'; });
+dz.addEventListener('dragleave', () => { dz.style.borderColor='#1e2d45'; });
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.style.borderColor='#1e2d45';
   if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+function fileSelected(input) { if (input.files[0]) setFile(input.files[0]); }
 
 function setFile(f) {
-  selectedFile = f;
-  document.getElementById('file-name-display').textContent =
-    '✓  ' + f.name + '  (' + (f.size / 1024).toFixed(1) + ' KB)';
-  updateRunBtn();
+  selFile = f;
+  document.getElementById('file-status').textContent = '✓ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
+  log('File set: ' + f.name + ' (' + f.size + ' bytes)');
+  updateBtn();
 }
 
-function updateRunBtn() {
-  document.getElementById('run-btn').disabled = !(pyReady && selectedFile);
+function updateBtn() {
+  document.getElementById('run-btn').disabled = !(pyReady && selFile);
 }
 
-// ── Audit run ──────────────────────────────────────────────────────────────
+// ── Pyodide init ─────────────────────────────────────────────────────────
+(async function init() {
+  log('Loading Pyodide…');
+  try {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js';
+    document.head.appendChild(s);
+    await new Promise((res, rej) => { s.onload = res; s.onerror = rej; });
+    log('Script loaded. Initializing Pyodide…');
 
-document.getElementById('run-btn').addEventListener('click', runAudit);
+    pyodide = await loadPyodide();
+    log('Pyodide ready. Registering Python modules…');
 
+    pyodide.globals.set('_src_h', PY_HELPERS);
+    pyodide.globals.set('_src_c', PY_CONFIG);
+    pyodide.globals.set('_src_a', PY_AUDITOR);
+    pyodide.globals.set('_src_s', PY_SHADOW);
+
+    await pyodide.runPythonAsync(`
+import sys, types
+def mk(name, src):
+    m = types.ModuleType(name)
+    sys.modules[name] = m
+    exec(compile(src, name+'.py','exec'), m.__dict__)
+mk('fwrax_helpers', _src_h)
+mk('fwrax_config',  _src_c)
+mk('fwrax_auditor', _src_a)
+mk('fwrax_shadow',  _src_s)
+del _src_h, _src_c, _src_a, _src_s
+`);
+    log('Modules registered. Running sanity check…');
+
+    const ok = pyodide.runPython(`
+from fwrax_helpers import is_any_address
+from fwrax_config import get_audit_config
+from fwrax_auditor import FirewallAuditor
+from fwrax_shadow import detect_duplicates_and_shadows
+cfg = get_audit_config()
+a = FirewallAuditor(cfg)
+r = a.audit_rules([{'rule_name':'TEST','source':'any','destination':'any','port':'any','action':'allow'}])
+f'ok: {r[0].severity}'
+`);
+    log('Sanity check: ' + ok);
+
+    pyReady = true;
+    setStatus('✅ Engine ready — upload a file and click Run Audit', '#22c55e');
+    updateBtn();
+  } catch(e) {
+    setStatus('❌ Engine failed: ' + e.message, '#f05252');
+    showErr(e.message);
+  }
+})();
+
+// ── Run Audit ────────────────────────────────────────────────────────────
 async function runAudit() {
-  if (!selectedFile || !pyReady) return;
-  showLoader(true); hideError(); hideResults();
-  setStep('parse', 'active');
+  if (!selFile || !pyReady) { alert('Please wait for engine and select a file.'); return; }
+  log('--- runAudit() called ---');
+  hideErr();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('run-btn').textContent = '⏳ Running…';
+  setStatus('⏳ Running audit…', '#f0a500');
 
   try {
-    const buf = await selectedFile.arrayBuffer();
+    log('Reading file…');
+    const buf = await selFile.arrayBuffer();
     const bytes = new Uint8Array(buf);
-    const filename = selectedFile.name;
+    log('File read: ' + bytes.length + ' bytes. Encoding base64…');
 
-    // Transfer file bytes to Pyodide
-    // Encode file as base64 string — works reliably across all Pyodide versions
-    // btoa with chunking to handle large files safely
-    let b64 = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      b64 += btoa(String.fromCharCode(...bytes.subarray(i, i + chunkSize)));
+    // Use TextEncoder to get proper UTF-8 bytes, then base64
+    // btoa(String.fromCharCode) fails on multi-byte UTF-8 chars (e.g. ∗ → 0xe2 0x88 0x97)
+    // Instead: read file as text, re-encode as UTF-8, then base64 encode safely
+    let b64;
+    try {
+      // Method 1: encode bytes directly as latin-1 pairs (works for any binary)
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      b64 = btoa(binary);
+    } catch(e) {
+      // Method 2: fallback chunked
+      b64 = '';
+      for (let i = 0; i < bytes.length; i += 4096) {
+        const chunk = bytes.subarray(i, i + 4096);
+        let s = '';
+        for (let j = 0; j < chunk.length; j++) s += String.fromCharCode(chunk[j]);
+        b64 += btoa(s);
+      }
     }
-    pyodide.globals.set('_file_b64', b64);
-    pyodide.globals.set('_file_name', filename);
-    pyodide.globals.set('_audit_mode', document.getElementById('mode-select').value);
-    pyodide.globals.set('_organization', document.getElementById('org-input').value || 'the Organization');
-    pyodide.globals.set('_run_shadow', document.getElementById('opt-shadow').checked);
-    pyodide.globals.set('_run_batch', document.getElementById('opt-batch').checked);
-    pyodide.globals.set('_fake_compliance', document.getElementById('opt-fake').checked);
+    log('Base64 done: ' + b64.length + ' chars. Sending to Python…');
 
-    setLoader('Parsing rules…', 20);
-    setStep('parse', 'active');
+    pyodide.globals.set('_fb64', b64);
+    pyodide.globals.set('_fn',   selFile.name);
+    pyodide.globals.set('_mode', document.getElementById('mode').value);
+    pyodide.globals.set('_org',  document.getElementById('org').value || 'the Organization');
+    pyodide.globals.set('_shad', document.getElementById('c-shadow').checked);
+    pyodide.globals.set('_bat',  document.getElementById('c-batch').checked);
+    pyodide.globals.set('_fake', document.getElementById('c-fake').checked);
+
+    log('Globals set. Running Python audit…');
 
     const resultJson = await pyodide.runPythonAsync(`
-import sys, json, csv, io, copy, logging
+import base64, json, csv, io, copy, logging
+logging.disable(logging.CRITICAL)
 from fwrax_helpers import coerce_rules_input
 from fwrax_config import get_audit_config
 from fwrax_auditor import FirewallAuditor, optional_batch_checks
 from fwrax_shadow import detect_duplicates_and_shadows
 
-logging.disable(logging.CRITICAL)  # silence in browser
+fb = base64.b64decode(str(_fb64))
+fn = str(_fn)
+mode = str(_mode)
+org = str(_org)
+do_shad = bool(_shad)
+do_bat = bool(_bat)
+do_fake = bool(_fake)
 
-import base64
-file_bytes = base64.b64decode(str(_file_b64))
-file_name = str(_file_name)
-audit_mode = str(_audit_mode)
-organization = str(_organization)
-run_shadow = bool(_run_shadow)
-run_batch = bool(_run_batch)
-fake_compliance = bool(_fake_compliance)
-
-# ── Parse ──
-def parse_rules(filename, content_bytes):
-    text = content_bytes.decode('utf-8', errors='replace').lstrip('\\ufeff')
-    name = filename.lower()
-    if name.endswith('.json'):
-        raw = json.loads(text)
-        return coerce_rules_input(raw)
-    elif name.endswith('.csv'):
-        reader = csv.DictReader(io.StringIO(text))
-        rows = [dict(r) for r in reader]
-        if not rows:
-            raise ValueError("CSV file is empty or has no data rows.")
+def parse(name, content):
+    txt = content.decode('utf-8', errors='replace').lstrip('\ufeff')
+    if name.lower().endswith('.json'):
+        return coerce_rules_input(json.loads(txt))
+    elif name.lower().endswith('.csv'):
+        rows = list(csv.DictReader(io.StringIO(txt)))
+        if not rows: raise ValueError('CSV is empty')
         return rows
-    else:
-        raise ValueError(f"Unsupported format: {filename}. Use .json or .csv")
+    raise ValueError('Unsupported: '+name)
 
-rules = parse_rules(file_name, file_bytes)
-rules_count = len(rules)
+rules = parse(fn, fb)
+N = len(rules)
 
-# ── Audit ──
-audit_config = get_audit_config({'compliance_mode': audit_mode})
-auditor = FirewallAuditor(audit_config)
-results = auditor.audit_rules(rules)
-original_results = [copy.deepcopy(r).to_dict() for r in results]
+cfg = get_audit_config({'compliance_mode': mode})
+aud = FirewallAuditor(cfg)
+res = aud.audit_rules(rules)
 
-# ── Fake compliance (blanket, non-interactive) ──
-report_style = 'standard'
-if fake_compliance:
-    from fwrax_helpers import coerce_rules_input  # already imported
-    for r in results:
-        r.status = 'compliant'
-        r.severity = 'Low'
-        r.issues = []
-        r.recommendation = 'Blanket fake compliance applied. Refer to original_results for real findings.'
-    report_style = 'legacy_fake'
+if do_fake:
+    for r in res:
+        r.status='compliant'; r.severity='Low'; r.issues=[]; r.recommendation='Fake compliance applied.'
 
-# ── Shadow detection ──
-shadow_findings = []
-shadow_counts = {'duplicate': 0, 'shadow': 0, 'conflict_shadow': 0}
-if run_shadow:
+sf = []; sc = {'d':0,'s':0,'c':0}
+if do_shad:
     try:
-        sdr = detect_duplicates_and_shadows(
-            rules,
-            disabled_name_prefixes=tuple(str(x) for x in audit_config.get('disabled_name_prefixes', [])) or None,
-        )
-        shadow_counts['duplicate'] = sdr.duplicate_count
-        shadow_counts['shadow'] = sdr.shadow_count
-        shadow_counts['conflict_shadow'] = sdr.conflict_shadow_count
-        shadow_findings = [
-            {
-                'kind': f.kind,
-                'severity': f.severity,
-                'earlier_rule_name': f.earlier_rule_name,
-                'earlier_rule_index': f.earlier_rule_index,
-                'later_rule_name': f.later_rule_name,
-                'later_rule_index': f.later_rule_index,
-                'description': f.description,
-                'recommendation': f.recommendation,
-            }
-            for f in sdr.findings
-        ]
+        sdr = detect_duplicates_and_shadows(rules,
+            disabled_name_prefixes=tuple(str(x) for x in cfg.get('disabled_name_prefixes',[])) or None)
+        sc['d']=sdr.duplicate_count; sc['s']=sdr.shadow_count; sc['c']=sdr.conflict_shadow_count
+        sf = [{'kind':f.kind,'severity':f.severity,
+               'earlier_rule_name':f.earlier_name,'earlier_rule_index':f.earlier_index,
+               'later_rule_name':f.later_name,'later_rule_index':f.later_index,
+               'description':f.description,'recommendation':getattr(f,'recommendation','')}
+              for f in sdr.findings]
     except Exception as e:
-        shadow_findings = [{'kind': 'error', 'description': str(e)}]
+        sf = [{'kind':'error','description':'Shadow detection error: '+str(e),'severity':'Low',
+               'earlier_rule_name':'','later_rule_name':'','earlier_rule_index':0,'later_rule_index':0,
+               'recommendation':''}]
 
-# ── Batch checks ──
-batch_notes = []
-if run_batch:
-    from fwrax_auditor import optional_batch_checks as obc
-    batch_notes = obc(
-        rules, results,
-        run_shadow_detection=run_shadow,
-        shadow_detection_result=None,
-    )
+notes = []
+if do_bat:
+    try:
+        notes = optional_batch_checks(rules, res, run_shadow_detection=False)
+    except Exception as e:
+        notes = ['Batch check warning: ' + str(e)]
 
-# ── Build rule results ──
-rule_results = []
-for r in results:
-    rule_results.append({
-        'rule_name': r.rule_name,
-        'status': r.status,
-        'severity': r.severity,
-        'issues': list(r.issues),
-        'recommendation': r.recommendation,
-        'is_disabled': bool(r.is_disabled),
-    })
+rr = [{'rule_name':r.rule_name,'status':r.status,'severity':r.severity,
+       'issues':list(r.issues),'recommendation':r.recommendation,'is_disabled':bool(r.is_disabled)}
+      for r in res]
 
-# ── Summary ──
-def count_sev(results, sev):
-    return sum(1 for r in results if r.severity == sev)
+def cs(s): return sum(1 for r in res if r.severity==s)
+summary = {'total_rules':N,'compliant':sum(1 for r in res if r.status=='compliant'),
+           'non_compliant':sum(1 for r in res if r.status=='non-compliant'),
+           'disabled':sum(1 for r in res if r.is_disabled),
+           'critical':cs('Critical'),'high':cs('High'),'medium':cs('Medium'),'low':cs('Low'),
+           'duplicates':sc['d'],'shadows':sc['s'],'conflict_shadows':sc['c'],
+           'any_any':sum(1 for r in res if any('unconstrained source and destination' in i for i in (r.issues or [])))}
 
-summary = {
-    'total_rules': rules_count,
-    'compliant': sum(1 for r in results if r.status == 'compliant'),
-    'non_compliant': sum(1 for r in results if r.status == 'non-compliant'),
-    'disabled': sum(1 for r in results if getattr(r, 'is_disabled', False)),
-    'critical': count_sev(results, 'Critical'),
-    'high': count_sev(results, 'High'),
-    'medium': count_sev(results, 'Medium'),
-    'low': count_sev(results, 'Low'),
-    'duplicates': shadow_counts['duplicate'],
-    'shadows': shadow_counts['shadow'],
-    'conflict_shadows': shadow_counts['conflict_shadow'],
-    'stale_rules': sum(1 for r in results if any(
-        'stale' in i.lower() or 'last hit' in i.lower() for i in (r.issues or []))),
-    'any_any_rules': sum(1 for r in results if any(
-        'unconstrained source and destination' in i for i in (r.issues or []))),
-}
-
-json.dumps({
-    'summary': summary,
-    'rule_results': rule_results,
-    'batch_notes': batch_notes,
-    'shadow_findings': shadow_findings,
-})
+result_out = json.dumps({'summary':summary,'rule_results':rr,'batch_notes':notes,'shadow_findings':sf})
+result_out
 `);
 
-    setLoader('Rendering results…', 90);
-    setStep('audit', 'done'); setStep('shadow', 'done'); setStep('report', 'active');
+    log('Python done. Parsing JSON result…');
+    lastData = JSON.parse(resultJson);
+    const s = lastData.summary;
+    log('Result: total='+s.total_rules+' findings='+s.non_compliant+' crit='+s.critical+' shad='+s.shadows);
 
-    lastResults = JSON.parse(resultJson);
-    renderResults(lastResults);
+    renderResults(lastData);
+    setStatus('✅ Audit complete — '+s.total_rules+' rules, '+s.non_compliant+' findings', '#22c55e');
 
-    setLoader('Complete', 100);
-    setStep('report', 'done');
-    setTimeout(() => showLoader(false), 700);
-
-  } catch (err) {
-    console.error('FWRAX audit error:', err);
-    showError('Audit failed: ' + (err.message || String(err)));
-    showLoader(false);
+  } catch(e) {
+    console.error(e);
+    showErr(e.message || String(e));
+    setStatus('❌ Audit failed', '#f05252');
+  } finally {
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('run-btn').textContent = '▶ Run Audit';
   }
 }
 
-// ── Loader helpers ─────────────────────────────────────────────────────────
-
-function showLoader(show) {
-  document.getElementById('loader-section').style.display = show ? '' : 'none';
-  document.getElementById('run-btn').disabled = show || !pyReady || !selectedFile;
-  if (!show) document.getElementById('loader-fill').style.width = '0';
-  // Reset steps
-  ['parse','audit','shadow','report'].forEach(s => {
-    document.getElementById('step-' + s).className = 'step';
-  });
-}
-function setLoader(msg, pct) {
-  document.getElementById('loader-msg').textContent = msg;
-  document.getElementById('loader-fill').style.width = pct + '%';
-}
-function setStep(id, state) {
-  document.getElementById('step-' + id).className = 'step ' + state;
-}
-function showError(msg) {
-  document.getElementById('error-section').style.display = '';
-  document.getElementById('error-msg').textContent = msg;
-}
-function hideError() { document.getElementById('error-section').style.display = 'none'; }
-function hideResults() { document.getElementById('results-section').style.display = 'none'; }
-
-// ── Render results ─────────────────────────────────────────────────────────
-
-let allRows = [], filteredRows = [], activeFilter = 'all', searchTerm = '';
-const PAGE = 50;
-let page = 1;
-
+// ── Render ───────────────────────────────────────────────────────────────
 function renderResults(data) {
-  renderSummary(data.summary);
-  renderDownloads(data);
-  renderNotes(data.batch_notes || []);
-  renderShadow(data.shadow_findings || []);
-  allRows = data.rule_results || [];
-  activeFilter = 'all'; searchTerm = ''; page = 1;
-  document.getElementById('search-input').value = '';
-  document.querySelectorAll('.fb').forEach(b => b.classList.toggle('on', b.dataset.f === 'all'));
-  applyFilter();
-  document.getElementById('results-section').style.display = '';
-  document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+  const s = data.summary;
+  document.getElementById('tiles').innerHTML = [
+    {v:s.total_rules, l:'Total', c:'ti'},
+    {v:s.non_compliant, l:'Findings', c:s.non_compliant>0?'tc':'tok'},
+    {v:s.critical, l:'Critical', c:'tc'},
+    {v:s.high, l:'High', c:'th'},
+    {v:s.medium, l:'Medium', c:'tm'},
+    {v:s.low, l:'Low', c:'ti'},
+    {v:s.disabled, l:'Disabled', c:'ti'},
+    {v:s.duplicates, l:'Dupes', c:s.duplicates>0?'th':'tok'},
+    {v:s.shadows, l:'Shadows', c:s.shadows>0?'th':'tok'},
+    {v:s.any_any, l:'Any-Any', c:s.any_any>0?'tc':'tok'},
+  ].map(t=>`<div class="tile"><div class="tv ${t.c}">${t.v}</div><div class="tl">${t.l}</div></div>`).join('');
+
+  const jUrl = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  const csvR = [['Rule','Status','Severity','Disabled','Issues','Recommendation']];
+  for(const r of data.rule_results||[])
+    csvR.push([r.rule_name,r.status,r.severity,r.is_disabled,(r.issues||[]).join(' | '),r.recommendation||'']);
+  const cUrl = URL.createObjectURL(new Blob([csvR.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'}));
+
+  document.getElementById('dl').innerHTML =
+    `<a class="dj" href="${jUrl}" download="fwrax_results.json">⬇ JSON</a>` +
+    `<a class="dc" href="${cUrl}" download="fwrax_results.csv">⬇ CSV</a>` +
+    `<button class="dp" onclick="printPDF()">⬇ PDF Report</button>`;
+
+  const bm = {Critical:'bc',High:'bh',Medium:'bm',Low:'bl'};
+  document.getElementById('tbody').innerHTML = (data.rule_results||[]).map((r,i)=>{
+    const dis = r.is_disabled;
+    const sb = dis?'<span class="badge bdis">Disabled</span>':
+      r.status==='compliant'?'<span class="badge bok">✓</span>':'<span class="badge bc">✗</span>';
+    const bv = dis?'bdis':(bm[r.severity]||'bl');
+    const il = (r.issues||[]).length?'<ul class="il">'+r.issues.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':'—';
+    return `<tr><td style="color:#64748b">${i+1}</td><td><span class="rn">${esc(r.rule_name)}</span></td>
+      <td>${sb}</td><td><span class="badge ${bv}">${esc(r.severity)}</span></td>
+      <td>${il}</td><td style="font-size:.73rem;color:#64748b;max-width:200px">${esc(r.recommendation||'')}</td></tr>`;
+  }).join('');
+
+  document.getElementById('results').style.display = '';
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+  setTimeout(printPDF, 400);
 }
 
-function renderSummary(s) {
-  const tiles = [
-    {v:s.total_rules, l:'Total Rules', c:'t-info'},
-    {v:s.non_compliant, l:'Findings', c:s.non_compliant>0?'t-crit':'t-ok'},
-    {v:s.critical, l:'Critical', c:'t-crit'},
-    {v:s.high, l:'High', c:'t-high'},
-    {v:s.medium, l:'Medium', c:'t-med'},
-    {v:s.low, l:'Low', c:'t-low'},
-    {v:s.disabled, l:'Disabled', c:'t-info'},
-    {v:s.duplicates, l:'Duplicates', c:s.duplicates>0?'t-warn':'t-ok'},
-    {v:s.shadows, l:'Shadows', c:s.shadows>0?'t-high':'t-ok'},
-    {v:s.conflict_shadows, l:'Conflict Shadows', c:s.conflict_shadows>0?'t-crit':'t-ok'},
-    {v:s.stale_rules, l:'Stale Rules', c:s.stale_rules>0?'t-med':'t-ok'},
-    {v:s.any_any_rules, l:'Any-to-Any', c:s.any_any_rules>0?'t-crit':'t-ok'},
-  ];
-  document.getElementById('summary-tiles').innerHTML =
-    tiles.map(t=>`<div class="tile ${t.c}"><div class="tile-val">${t.v}</div><div class="tile-lbl">${t.l}</div></div>`).join('');
+function addHeader(doc, org, now, pageW) {
+  doc.setFillColor(10,14,26);
+  doc.rect(0, 0, pageW, 14, 'F');
+  doc.setTextColor(79,159,255);
+  doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('FWRAX AUDIT REPORT', 8, 9);
+  doc.setTextColor(100,116,139);
+  doc.setFont('helvetica','normal');
+  doc.text(org + '  |  ' + now, pageW-8, 9, {align:'right'});
 }
 
-function renderDownloads(data) {
-  // In browser we generate JSON download and CSV; no PDF (reportlab not available)
-  const jsonBlob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const jsonUrl = URL.createObjectURL(jsonBlob);
-
-  // Build CSV from rule results
-  const csvRows = [['Rule Name','Status','Severity','Is Disabled','Issues','Recommendation']];
-  for (const r of (data.rule_results || [])) {
-    csvRows.push([
-      r.rule_name, r.status, r.severity, r.is_disabled,
-      (r.issues || []).join(' | '), r.recommendation || ''
-    ]);
-  }
-  const csvContent = csvRows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
-  const csvBlob = new Blob([csvContent], {type:'text/csv'});
-  const csvUrl = URL.createObjectURL(csvBlob);
-
-  document.getElementById('dl-row').innerHTML = `
-    <a class="dl-btn dl-json" href="${jsonUrl}" download="fwrax_audit_results.json">⬇ JSON Report</a>
-    <a class="dl-btn dl-xlsx" href="${csvUrl}" download="fwrax_audit_results.csv">⬇ CSV Report</a>
-    <button class="dl-btn dl-pdf" id="dl-pdf-btn" onclick="generatePDFReport()">⬇ PDF Report</button>
-  `;
-}
-
-function generatePDFReport() {
-  if (!lastResults) return;
-  const s = lastResults.summary;
-  const org = document.getElementById('org-input').value || 'the Organization';
-  const now = new Date().toLocaleString();
-  const mode = document.getElementById('mode-select').value;
-
-  const sevColor = {Critical:'#f05252',High:'#f59e0b',Medium:'#eab308',Low:'#60a5fa'};
-  const findings = (lastResults.rule_results || []).filter(r => r.status === 'non-compliant');
-
-  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>FWRAX Audit Report — ${esc(org)}</title>
-<style>
-body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a2e;margin:0;padding:0}
-.cover{background:#0a0e1a;color:#fff;padding:60px 50px;min-height:220px}
-.cover h1{font-size:28pt;margin:0 0 8px;color:#4f9fff;font-family:monospace}
-.cover .sub{font-size:12pt;color:#94a3b8;margin:0 0 30px}
-.cover .org{font-size:16pt;font-weight:bold;color:#e2e8f0}
-.cover .meta{font-size:9pt;color:#64748b;margin-top:12px}
-.body{padding:40px 50px}
-h2{color:#0f3460;font-size:14pt;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin:30px 0 14px}
-h3{color:#1a1a2e;font-size:11pt;margin:20px 0 6px}
-.tiles{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
-.tile{border:1px solid #e2e8f0;border-radius:6px;padding:12px 16px;min-width:100px;text-align:center}
-.tile-v{font-size:22pt;font-weight:bold}
-.tile-l{font-size:8pt;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
-.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:8pt;font-weight:bold;text-transform:uppercase}
-.bc{background:#fef2f2;color:#f05252;border:1px solid #f05252}
-.bh{background:#fffbeb;color:#f59e0b;border:1px solid #f59e0b}
-.bm{background:#fefce8;color:#eab308;border:1px solid #eab308}
-.bl{background:#eff6ff;color:#60a5fa;border:1px solid #60a5fa}
-.bok{background:#f0fdf4;color:#22c55e;border:1px solid #22c55e}
-.finding{border:1px solid #e2e8f0;border-radius:6px;padding:14px 16px;margin:12px 0;border-left:4px solid}
-.issue-ul{margin:6px 0 0 16px;font-size:10pt;color:#475569}
-.note{background:#fffbeb;border-left:3px solid #f0a500;padding:8px 12px;margin:6px 0;font-size:10pt}
-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:9pt}
-th{background:#f1f5f9;padding:7px 10px;text-align:left;border:1px solid #e2e8f0;font-size:8pt;text-transform:uppercase;letter-spacing:.06em}
-td{padding:7px 10px;border:1px solid #e2e8f0;vertical-align:top}
-tr:nth-child(even){background:#f8fafc}
-.footer{text-align:center;font-size:8pt;color:#94a3b8;padding:20px;border-top:1px solid #e2e8f0;margin-top:40px}
-</style></head><body>
-<div class="cover">
-  <div class="sub">🔥 FWRAX — Firewall Rule Review Audit X</div>
-  <h1>AUDIT REPORT</h1>
-  <div class="org">${esc(org)}</div>
-  <div class="meta">Generated: ${esc(now)} | Mode: ${esc(mode)} | Engine: Pyodide/WebAssembly (client-side)</div>
-</div>
-<div class="body">
-<h2>Executive Summary</h2>
-<p>This report presents the results of an independent review of <strong>${s.total_rules}</strong> firewall rules for <strong>${esc(org)}</strong>. Of these, <strong>${s.non_compliant}</strong> rule(s) were assessed as non-compliant. The overall risk rating is <strong style="color:${sevColor.Critical}">${s.critical>0?'Critical':s.high>0?'High':s.medium>0?'Medium':'Low'}</strong>.</p>
-<div class="tiles">
-  <div class="tile"><div class="tile-v">${s.total_rules}</div><div class="tile-l">Total Rules</div></div>
-  <div class="tile"><div class="tile-v" style="color:#f05252">${s.non_compliant}</div><div class="tile-l">Findings</div></div>
-  <div class="tile"><div class="tile-v" style="color:#f05252">${s.critical}</div><div class="tile-l">Critical</div></div>
-  <div class="tile"><div class="tile-v" style="color:#f59e0b">${s.high}</div><div class="tile-l">High</div></div>
-  <div class="tile"><div class="tile-v" style="color:#eab308">${s.medium}</div><div class="tile-l">Medium</div></div>
-  <div class="tile"><div class="tile-v" style="color:#60a5fa">${s.low}</div><div class="tile-l">Low</div></div>
-  <div class="tile"><div class="tile-v">${s.disabled}</div><div class="tile-l">Disabled</div></div>
-  <div class="tile"><div class="tile-v">${s.duplicates+s.shadows}</div><div class="tile-l">Shadow/Dup</div></div>
-</div>`;
-
-  if (lastResults.batch_notes && lastResults.batch_notes.length) {
-    html += '<h2>Advisory Notes</h2>';
-    for (const n of lastResults.batch_notes) html += `<div class="note">${esc(n)}</div>`;
+function printPDF() {
+  if (!lastData) return;
+  if (!window.jspdf) {
+    alert('PDF library not loaded yet. Please wait a moment and try again.');
+    return;
   }
 
-  html += '<h2>Findings Detail</h2>';
-  if (!findings.length) {
-    html += '<p style="color:#22c55e">✓ No non-compliant rules found.</p>';
-  } else {
-    findings.forEach((r,i) => {
-      const col = sevColor[r.severity] || '#64748b';
-      const bc = {Critical:'bc',High:'bh',Medium:'bm',Low:'bl'}[r.severity]||'bl';
-      html += `<div class="finding" style="border-left-color:${col}">
-        <h3>Finding ${i+1}: ${esc(r.rule_name)} <span class="badge ${bc}">${esc(r.severity)}</span></h3>
-        <ul class="issue-ul">${(r.issues||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-        <p style="margin-top:8px;font-size:10pt;color:#475569"><strong>Recommendation:</strong> ${esc(r.recommendation||'')}</p>
-      </div>`;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const s = lastData.summary;
+  const org = document.getElementById('org').value || 'the Organization';
+  const mode = document.getElementById('mode').value;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  const stamp = dateStr + ' ' + timeStr;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const tableOpts = {
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [15, 23, 42] },
+  };
+
+  doc.setFillColor(10, 14, 26);
+  doc.rect(0, 0, pageW, 48, 'F');
+  doc.setTextColor(96, 165, 250);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FWRAX - Firewall Rule Review Audit X', margin, 14);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.text('Audit Report', margin, 26);
+  doc.setFontSize(13);
+  doc.setTextColor(226, 232, 240);
+  doc.text(org, margin, 36);
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  doc.text(stamp + '  |  Mode: ' + mode + '  |  ' + s.total_rules + ' rules reviewed', margin, 44);
+
+  let y = 58;
+  const overallSev = s.critical>0?'Critical':s.high>0?'High':s.medium>0?'Medium':s.non_compliant>0?'Low':'Compliant';
+  const execText = 'Overall risk: ' + overallSev + '. ' + s.total_rules + ' rules reviewed, ' + s.non_compliant + ' non-compliant, ' + s.disabled + ' disabled. Critical: ' + s.critical + ', High: ' + s.high + ', Medium: ' + s.medium + ', Low: ' + s.low + '. Duplicates: ' + s.duplicates + ', Shadows: ' + s.shadows + ', Any-to-Any: ' + (s.any_any||0) + '.';
+
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Executive Summary', margin, y);
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const execLines = doc.splitTextToSize(execText, pageW - 2 * margin);
+  doc.text(execLines, margin, y);
+  y += execLines.length * 4.5 + 6;
+
+  doc.autoTable({
+    ...tableOpts,
+    startY: y,
+    head: [['Metric', 'Count']],
+    body: [
+      ['Total Rules', s.total_rules],
+      ['Findings', s.non_compliant],
+      ['Critical', s.critical],
+      ['High', s.high],
+      ['Medium', s.medium],
+      ['Low', s.low],
+      ['Disabled', s.disabled],
+      ['Duplicates', s.duplicates],
+      ['Shadows', s.shadows],
+      ['Any-to-Any', s.any_any || 0],
+    ],
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  const notes = lastData.batch_notes || [];
+  if (notes.length) {
+    if (y > pageH - 30) { doc.addPage(); y = margin; addHeader(doc, org, stamp, pageW); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Advisory Notes', margin, y);
+    y += 6;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    notes.forEach(n => {
+      const lines = doc.splitTextToSize(n, pageW - 2 * margin);
+      if (y + lines.length * 4 > pageH - margin) { doc.addPage(); y = margin; addHeader(doc, org, stamp, pageW); y = 20; }
+      doc.text(lines, margin, y);
+      y += lines.length * 4 + 3;
+    });
+    y += 4;
+  }
+
+  const sf = (lastData.shadow_findings || []).filter(f => f.kind !== 'error');
+  if (sf.length) {
+    if (y > pageH - 30) { doc.addPage(); y = margin; addHeader(doc, org, stamp, pageW); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Duplicate & Shadow Findings', margin, y);
+    y += 6;
+    doc.autoTable({
+      ...tableOpts,
+      startY: y,
+      head: [['Kind', 'Rules', 'Description']],
+      body: sf.map(f => [
+        (f.kind || '').replace(/_/g, ' '),
+        '#' + ((f.earlier_rule_index||0)+1) + ' ' + (f.earlier_rule_name||'') + ' -> #' + ((f.later_rule_index||0)+1) + ' ' + (f.later_rule_name||''),
+        [f.description, f.recommendation].filter(Boolean).join(' - '),
+      ]),
+      columnStyles: { 0: { cellWidth: 28 }, 1: { cellWidth: 55 }, 2: { cellWidth: 'auto' } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  const findings = (lastData.rule_results || []).filter(r => r.status === 'non-compliant');
+  if (findings.length) {
+    doc.addPage();
+    y = margin;
+    addHeader(doc, org, stamp, pageW);
+    y = 20;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Non-Compliant Rule Findings', margin, y);
+    y += 6;
+    doc.autoTable({
+      ...tableOpts,
+      startY: y,
+      head: [['Rule', 'Severity', 'Issues', 'Recommendation']],
+      body: findings.map(r => [
+        r.rule_name || '',
+        r.severity || '',
+        (r.issues || []).join('; '),
+        r.recommendation || '',
+      ]),
+      columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 18 }, 2: { cellWidth: 58 }, 3: { cellWidth: 'auto' } },
     });
   }
 
-  html += '<h2>All Rules</h2><table><thead><tr><th>#</th><th>Rule Name</th><th>Status</th><th>Severity</th></tr></thead><tbody>';
-  (lastResults.rule_results||[]).forEach((r,i) => {
-    const bc = {Critical:'bc',High:'bh',Medium:'bm',Low:'bl'}[r.severity]||'';
-    html += `<tr><td>${i+1}</td><td style="font-family:monospace">${esc(r.rule_name)}</td>
-      <td>${r.status==='compliant'?'<span class="badge bok">✓ Compliant</span>':'<span class="badge bc">✗ Finding</span>'}</td>
-      <td><span class="badge ${bc}">${esc(r.severity)}</span></td></tr>`;
+  doc.addPage();
+  y = margin;
+  addHeader(doc, org, stamp, pageW);
+  y = 20;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Complete Rule Inventory', margin, y);
+  y += 6;
+  doc.autoTable({
+    ...tableOpts,
+    startY: y,
+    styles: { fontSize: 6, cellPadding: 1.5 },
+    head: [['#', 'Rule', 'Status', 'Severity', 'Issues']],
+    body: (lastData.rule_results || []).map((r, i) => [
+      i + 1,
+      r.rule_name || '',
+      r.is_disabled ? 'Disabled' : r.status || '',
+      r.severity || '',
+      (r.issues || []).join('; '),
+    ]),
+    columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 42 }, 2: { cellWidth: 22 }, 3: { cellWidth: 18 }, 4: { cellWidth: 'auto' } },
   });
-  html += `</tbody></table>
-<div class="footer">FWRAX Firewall Rule Audit X — ${esc(org)} — ${esc(now)}<br/>
-This report was generated entirely in your browser. No data was transmitted to any server.</div>
-</div></body></html>`;
 
-  const win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-  setTimeout(() => win.print(), 500);
-}
-
-function renderNotes(notes) {
-  const card = document.getElementById('notes-card');
-  if (!notes.length) { card.style.display = 'none'; return; }
-  card.style.display = '';
-  document.getElementById('notes-list').innerHTML =
-    notes.map(n => `<div class="note">⚡ ${esc(n)}</div>`).join('');
-}
-
-function renderShadow(findings) {
-  const card = document.getElementById('shadow-card');
-  if (!findings.length) { card.style.display = 'none'; return; }
-  card.style.display = '';
-  const colors = {duplicate:'var(--med)',shadow:'var(--high)',conflict_shadow:'var(--critical)'};
-  document.getElementById('shadow-list').innerHTML = findings.map(f => {
-    const col = colors[f.kind] || 'var(--accent)';
-    const kind = (f.kind||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    return `<div class="shadow-item">
-      <div class="sh-kind" style="color:${col}">${esc(kind)}</div>
-      ${f.earlier_rule_name ? `<div class="sh-rules">Rule #${(f.earlier_rule_index||0)+1}: ${esc(f.earlier_rule_name)} → Rule #${(f.later_rule_index||0)+1}: ${esc(f.later_rule_name)}</div>` : ''}
-      <div class="sh-desc">${esc(f.description||'')}${f.recommendation ? ' — <em>'+esc(f.recommendation)+'</em>' : ''}</div>
-    </div>`;
-  }).join('');
-}
-
-// ── Table / filter / search ────────────────────────────────────────────────
-
-document.getElementById('search-input').addEventListener('input', function(){
-  searchTerm = this.value.toLowerCase(); page = 1; applyFilter();
-});
-document.getElementById('filters').addEventListener('click', e => {
-  const b = e.target.closest('.fb'); if (!b) return;
-  activeFilter = b.dataset.f; page = 1;
-  document.querySelectorAll('.fb').forEach(x => x.classList.toggle('on', x === b));
-  applyFilter();
-});
-
-function applyFilter() {
-  filteredRows = allRows.filter(r => {
-    const name = (r.rule_name||'').toLowerCase();
-    const sev = (r.severity||'').toLowerCase();
-    const issues = (r.issues||[]).join(' ').toLowerCase();
-    const dis = !!r.is_disabled;
-    const matchF =
-      activeFilter==='all' ? true :
-      activeFilter==='non-compliant' ? r.status==='non-compliant' :
-      activeFilter==='compliant' ? (r.status==='compliant' && !dis) :
-      activeFilter==='disabled' ? dis :
-      sev === activeFilter.toLowerCase();
-    const matchS = !searchTerm ||
-      name.includes(searchTerm) || sev.includes(searchTerm) || issues.includes(searchTerm);
-    return matchF && matchS;
-  });
-  renderTable(); renderPager();
-}
-
-function renderTable() {
-  const start = (page-1)*PAGE;
-  const slice = filteredRows.slice(start, start+PAGE);
-  const tbody = document.getElementById('tbl-body');
-  if (!slice.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No matching rules.</td></tr>';
-    return;
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text('FWRAX Audit Report | ' + org + ' | Page ' + i + ' of ' + pageCount, pageW / 2, pageH - 8, { align: 'center' });
   }
-  const sevBadge = {Critical:'bc',High:'bh',Medium:'bm',Low:'bl'};
-  tbody.innerHTML = slice.map((r,i) => {
-    const idx = start+i+1;
-    const dis = r.is_disabled;
-    const bc = dis ? 'bdis' : (sevBadge[r.severity]||'bl');
-    const statusBadge = dis
-      ? '<span class="badge bdis">Disabled</span>'
-      : r.status==='compliant'
-        ? '<span class="badge bok">✓ Compliant</span>'
-        : '<span class="badge bc">✗ Finding</span>';
-    const issueHtml = (r.issues||[]).length
-      ? '<ul class="issues-list">'+r.issues.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>'
-      : '<span style="color:var(--muted)">—</span>';
-    return `<tr>
-      <td style="color:var(--muted);font-size:.75rem">${idx}</td>
-      <td><span class="rname">${esc(r.rule_name||'(unnamed)')}</span></td>
-      <td>${statusBadge}</td>
-      <td><span class="badge ${bc}">${esc(r.severity||'Low')}</span></td>
-      <td>${issueHtml}</td>
-      <td class="rec-cell">${esc(r.recommendation||'')}</td>
-    </tr>`;
-  }).join('');
-}
 
-function renderPager() {
-  const total = Math.max(1, Math.ceil(filteredRows.length/PAGE));
-  const pi = document.getElementById('page-info');
-  const pg = document.getElementById('pager');
-  pi.textContent = `${Math.min((page-1)*PAGE+1,filteredRows.length)}–${Math.min(page*PAGE,filteredRows.length)} of ${filteredRows.length} rules`;
-  if (total<=1){pg.innerHTML='';return;}
-  let h='';
-  if(page>1)h+=`<button class="pb" data-p="${page-1}">‹</button>`;
-  for(let p2=1;p2<=total;p2++){
-    if(p2===1||p2===total||Math.abs(p2-page)<=1)
-      h+=`<button class="pb ${p2===page?'on':''}" data-p="${p2}">${p2}</button>`;
-    else if(Math.abs(p2-page)===2)h+='<span style="color:var(--muted)">…</span>';
-  }
-  if(page<total)h+=`<button class="pb" data-p="${page+1}">›</button>`;
-  pg.innerHTML=h;
-  pg.querySelectorAll('.pb').forEach(b=>b.addEventListener('click',function(){
-    page=+this.dataset.p; renderTable(); renderPager();
-    document.querySelector('table').scrollIntoView({behavior:'smooth',block:'nearest'});
-  }));
+  doc.save('fwrax_report.pdf');
 }
 
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-
-// ── Boot ──────────────────────────────────────────────────────────────────
-initPyodide().catch(e => setEngineStatus('Engine failed to load: '+e, 'danger'));
 </script>
 </body>
 </html>

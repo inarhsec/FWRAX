@@ -122,6 +122,38 @@ python server.py
 
 ---
 
+## Production deployment
+
+### GitHub Pages (browser-only, no server)
+
+Push to `main` — CI runs tests, then deploys `index.html` to GitHub Pages (no Python source or sample data exposed).
+
+### Docker (API + web UI)
+
+```bash
+docker build -t fwrax .
+docker run -p 8000:8000 fwrax
+# http://localhost:8000
+```
+
+### Server environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `FWRAX_CORS_ORIGINS` | `*` | Comma-separated allowed origins (e.g. `https://app.example.com`) |
+| `FWRAX_MAX_UPLOAD_MB` | `50` | Max upload size in MB |
+| `FWRAX_MAX_CACHE` | `100` | In-memory report cache size |
+| `FWRAX_ENABLE_DOCS` | off | Set `true` to expose `/api/docs` |
+
+Production example:
+
+```bash
+export FWRAX_CORS_ORIGINS=https://your-domain.com
+python server.py --host 0.0.0.0 --port 8000 --workers 2
+```
+
+---
+
 ## Run tests
 
 ```bash

@@ -1,0 +1,15 @@
+.git
+.github
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+venv
+.env
+*.log
+test_out.pdf
+sample_data
+DCreport.pdf
+DCreport.json
+DC_FORTINET.json
+fwrax_local_test.html

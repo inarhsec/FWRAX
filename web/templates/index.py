@@ -442,22 +442,50 @@ function renderSummary(s) {
   ).join('');
 }
 
+async function downloadReport(fmt, label) {
+  if (!auditId) return;
+  try {
+    const resp = await fetch('/api/download/' + auditId + '/' + fmt);
+    if (!resp.ok) {
+      let detail = 'Download failed';
+      try {
+        const err = await resp.json();
+        detail = err.detail || detail;
+      } catch (_) {}
+      alert(label + ' download failed: ' + detail);
+      return;
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fwrax_report_' + auditId.slice(0, 8) + '.' + fmt;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    alert(label + ' download failed: ' + err.message);
+  }
+}
+
 function renderDownloads() {
   if(!auditId) return;
   document.getElementById('dl-buttons').innerHTML = `
-    <a class="dl-btn pdf" href="/api/download/${auditId}/pdf" download>
+    <button type="button" class="dl-btn pdf" onclick="downloadReport('pdf','PDF')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Download PDF
-    </a>
-    <a class="dl-btn xlsx" href="/api/download/${auditId}/xlsx" download>
+    </button>
+    <button type="button" class="dl-btn xlsx" onclick="downloadReport('xlsx','Excel')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       Download Excel
-    </a>
-    <a class="dl-btn json-btn" href="/api/download/${auditId}/json" download>
+    </button>
+    <button type="button" class="dl-btn json-btn" onclick="downloadReport('json','JSON')">
       <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Download JSON
-    </a>
+    </button>
   `;
+  downloadReport('pdf', 'PDF');
 }
 
 function renderBatchNotes(notes) {

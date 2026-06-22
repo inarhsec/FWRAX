@@ -11,3 +11,4 @@ venv/
 *.log
 uploads/
 reports/
+test_out.pdf

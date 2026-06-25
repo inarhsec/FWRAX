@@ -1,0 +1,32 @@
+{
+  "device": "FortiGate 80F",
+  "hostname": "Branch-Office",
+  "firmware": "v7.4.5",
+  "score": 91,
+  "summary": {
+    "policies": 28,
+    "high": 1,
+    "medium": 2,
+    "low": 4
+  },
+  "findings": [
+    {
+      "severity": "HIGH",
+      "policy": 18,
+      "title": "Any-to-Any Rule",
+      "recommendation": "Restrict source/destination."
+    },
+    {
+      "severity": "MEDIUM",
+      "policy": 7,
+      "title": "Logging Disabled",
+      "recommendation": "Enable traffic logging."
+    },
+    {
+      "severity": "MEDIUM",
+      "policy": 12,
+      "title": "Unused Policy",
+      "recommendation": "Remove unused policy."
+    }
+  ]
+}

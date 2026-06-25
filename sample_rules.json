@@ -1,0 +1,44 @@
+{
+  "device": "FortiGate 80F",
+  "hostname": "Branch-Office",
+  "firmware": "v7.4.5",
+  "policies": [
+    {
+      "policyid": 1,
+      "name": "LAN_to_Internet",
+      "action": "accept",
+      "src": "LAN",
+      "dst": "Internet",
+      "services": [
+        "HTTP",
+        "HTTPS"
+      ],
+      "nat": true,
+      "logging": "all"
+    },
+    {
+      "policyid": 2,
+      "name": "Guest_WiFi",
+      "action": "accept",
+      "src": "Guest",
+      "dst": "Internet",
+      "services": [
+        "HTTP",
+        "HTTPS",
+        "DNS"
+      ],
+      "nat": true,
+      "logging": "all"
+    },
+    {
+      "policyid": 3,
+      "name": "Block_SMB",
+      "action": "deny",
+      "src": "LAN",
+      "dst": "Internet",
+      "services": [
+        "SMB"
+      ]
+    }
+  ]
+}

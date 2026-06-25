@@ -1,0 +1,14 @@
+{
+  "device": "FortiGate 80F",
+  "hostname": "Branch-Office",
+  "firmware": "v7.4.5",
+  "score": 100,
+  "summary": {
+    "policies": 28,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "findings": [],
+  "fakeCompliance": true
+}

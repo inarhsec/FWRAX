@@ -52,6 +52,19 @@ tr:hover td{background:rgba(79,159,255,.02)}
 .bdis{color:#64748b;border-color:#1e2d45;background:#161d2e}
 .il{list-style:none;padding:0;font-size:.73rem;color:#64748b}
 .il li::before{content:'› '}
+
+
+/* ===== Sample Downloads ===== */
+.samples-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1rem}
+.sample-card{background:#161d2e;border:1px solid #1e2d45;border-radius:8px;padding:1rem;transition:.2s}
+.sample-card:hover{border-color:#4f9fff;transform:translateY(-3px)}
+.sample-card h3{margin-bottom:.5rem;color:#4f9fff}
+.sample-card p{font-size:.82rem;color:#94a3b8;line-height:1.5;margin-bottom:.75rem}
+.sample-card ul{padding-left:1.1rem;margin-bottom:1rem;color:#cbd5e1;font-size:.8rem}
+.sample-card li{margin:.25rem 0}
+.sample-btn{display:inline-block;padding:.55rem .9rem;background:#2979d8;color:#fff;text-decoration:none;border-radius:6px;font-size:.8rem;font-weight:600}
+.sample-btn:hover{background:#4f9fff}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -60,11 +73,67 @@ tr:hover td{background:rgba(79,159,255,.02)}
 <h1> FWRAX - Firewall Rule Audit X</h1>
 <div class="sub">Upload rules · Run audit · Download report · Runs entirely in your browser</div>
 
-<div id="status">⏳ Loading Python engine… (~5s on first load)</div>
+<div id="status"> Loading Python engine… (~5s on first load)</div>
+
+<div class="card">
+<h2 style="margin-bottom:1rem;color:#4f9fff"> Sample Files</h2>
+<p style="color:#94a3b8;margin-bottom:1rem">
+Download example firewall rules and audit reports to test FWRAX without exporting a production firewall.
+</p>
+
+<div class="samples-grid">
+
+<div class="sample-card">
+<h3> sample_rules.json</h3>
+<p>Branch Office FortiGate configuration with realistic firewall policies.</p>
+<ul>
+<li>FortiGate 80F</li>
+<li>28 Sample Policies</li>
+<li>Safe Public Data</li>
+</ul>
+<a class="sample-btn" href="samples/sample_rules.json" download>Download</a>
+</div>
+
+<div class="sample-card">
+<h3> sample_report.pdf</h3>
+<p>Example PDF generated after auditing the sample firewall.</p>
+<ul>
+<li>Executive Summary</li>
+<li>Security Score</li>
+<li>Recommendations</li>
+</ul>
+<a class="sample-btn" href="samples/sample_report.pdf" download>Download</a>
+</div>
+
+<div class="sample-card">
+<h3> sample_report.json</h3>
+<p>Structured JSON output for developers and API integrations.</p>
+<ul>
+<li>Findings</li>
+<li>Severity Breakdown</li>
+<li>Machine Readable</li>
+</ul>
+<a class="sample-btn" href="samples/sample_report.json" download>Download</a>
+</div>
+
+<div class="sample-card">
+<h3> sample_fake_compliance_report.json</h3>
+<p>Demonstrates Fake Compliance mode with all findings suppressed.</p>
+<ul>
+<li>100% Score</li>
+<li>0 Findings</li>
+<li>Demo Only</li>
+</ul>
+<a class="sample-btn" href="samples/sample_fake_compliance_report.json" download>Download</a>
+</div>
+
+</div>
+</div>
+
 
 <div class="card">
   <div id="drop-zone" onclick="document.getElementById('file-input').click()">
-    📂 Drop your rules file here or click to browse<br/>
+     Drop your rules file here or click to browse<br/>
     <small style="color:#64748b">.json or .csv</small>
     <div id="file-status"></div>
   </div>
@@ -215,10 +284,10 @@ f'ok: {r[0].severity}'
     log('Sanity check: ' + ok);
 
     pyReady = true;
-    setStatus('✅ Engine ready — upload a file and click Run Audit', '#22c55e');
+    setStatus(' Engine ready — upload a file and click Run Audit', '#22c55e');
     updateBtn();
   } catch(e) {
-    setStatus('❌ Engine failed: ' + e.message, '#f05252');
+    setStatus(' Engine failed: ' + e.message, '#f05252');
     showErr(e.message);
   }
 })();
@@ -230,8 +299,8 @@ async function runAudit() {
   hideErr();
   document.getElementById('results').style.display = 'none';
   document.getElementById('run-btn').disabled = true;
-  document.getElementById('run-btn').textContent = '⏳ Running…';
-  setStatus('⏳ Running audit…', '#f0a500');
+  document.getElementById('run-btn').textContent = ' Running…';
+  setStatus(' Running audit…', '#f0a500');
 
   try {
     log('Reading file…');
@@ -354,12 +423,12 @@ result_out
     log('Result: total='+s.total_rules+' findings='+s.non_compliant+' crit='+s.critical+' shad='+s.shadows);
 
     renderResults(lastData);
-    setStatus('✅ Audit complete — '+s.total_rules+' rules, '+s.non_compliant+' findings', '#22c55e');
+    setStatus(' Audit complete — '+s.total_rules+' rules, '+s.non_compliant+' findings', '#22c55e');
 
   } catch(e) {
     console.error(e);
     showErr(e.message || String(e));
-    setStatus('❌ Audit failed', '#f05252');
+    setStatus(' Audit failed', '#f05252');
   } finally {
     document.getElementById('run-btn').disabled = false;
     document.getElementById('run-btn').textContent = '▶ Run Audit';
